@@ -31,7 +31,7 @@ class _MyRegisterWidget extends State<RegisterWidget>
   late SharedPreferences _preferences;
   late RegistrationState _registerState;
 
-  TransportType _selectedTransport = TransportType.TCP;
+  TransportType _selectedTransport = TransportType.WS;
 
   SIPUAHelper? get helper => widget._helper;
 
@@ -69,15 +69,15 @@ class _MyRegisterWidget extends State<RegisterWidget>
     _preferences = await SharedPreferences.getInstance();
     setState(() {
       _portController.text = '5060';
-      _wsUriController.text =
-          _preferences.getString('ws_uri') ?? 'wss://tryit.jssip.net:10443';
-      _sipUriController.text =
-          _preferences.getString('sip_uri') ?? 'hello_flutter@tryit.jssip.net';
+      _wsUriController.text = _preferences.getString('ws_uri') ??
+          'wss://bpjs-issb.jasnita.co.id:4398/ws';
+      _sipUriController.text = _preferences.getString('sip_uri') ??
+          'VP00000@bpjs-issb.jasnita.co.id';
       _displayNameController.text =
           _preferences.getString('display_name') ?? 'Flutter SIP UA';
       _passwordController.text = _preferences.getString('password') ?? '';
       _authorizationUserController.text =
-          _preferences.getString('auth_user') ?? '';
+          _preferences.getString('auth_user') ?? 'VP00000';
     });
   }
 
@@ -126,14 +126,17 @@ class _MyRegisterWidget extends State<RegisterWidget>
 
     _saveSettings();
 
-       currentUser.register(SipUser(
+    currentUser.register(SipUser(
         selectedTransport: _selectedTransport,
         wsExtraHeaders: _wsExtraHeaders,
         sipUri: _sipUriController.text,
+        wsUrl: _wsUriController.text,
         port: _portController.text,
         displayName: _displayNameController.text,
         password: _passwordController.text,
         authUser: _authorizationUserController.text));
+
+    Navigator.pop(context);
   }
 
   @override
