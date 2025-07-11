@@ -1,4 +1,5 @@
 import 'package:dart_sip_ua_example/src/loket_cti/branch_selection_page.dart';
+import 'package:dart_sip_ua_example/src/loket_cti/call_page.dart';
 import 'package:dart_sip_ua_example/src/theme_provider.dart';
 import 'package:dart_sip_ua_example/src/user_state/sip_user_cubit.dart';
 import 'package:flutter/foundation.dart'
@@ -34,13 +35,19 @@ typedef PageContentBuilder = Widget Function(
 class MyApp extends StatelessWidget {
   final SIPUAHelper _helper = SIPUAHelper();
   Map<String, PageContentBuilder> routes = {
-    '/': ([SIPUAHelper? helper, Object? arguments]) => BranchSelectionPage(),
+    '/': ([SIPUAHelper? helper, Object? arguments]) =>
+        BranchSelectionPage(helper),
+    '/call-page': ([SIPUAHelper? helper, Object? arguments]) {
+      final args = arguments as Map?;
+      final branch = args?['branch'];
+      return CallPage(helper, selectedBranch: branch);
+    },
+    '/callscreen': ([SIPUAHelper? helper, Object? arguments]) =>
+        CallScreenWidget(helper, arguments as Call?),
     '/call': ([SIPUAHelper? helper, Object? arguments]) =>
         DialPadWidget(helper),
     '/register': ([SIPUAHelper? helper, Object? arguments]) =>
         RegisterWidget(helper),
-    '/callscreen': ([SIPUAHelper? helper, Object? arguments]) =>
-        CallScreenWidget(helper, arguments as Call?),
     '/about': ([SIPUAHelper? helper, Object? arguments]) => AboutWidget(),
   };
 

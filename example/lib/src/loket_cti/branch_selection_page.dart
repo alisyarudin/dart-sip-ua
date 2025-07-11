@@ -1,24 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:sip_ua/sip_ua.dart';
 import 'bloc/branch_bloc.dart';
 import 'bloc/branch_event.dart';
 import 'bloc/branch_state.dart';
 import 'models/branch_model.dart';
 import 'call_page.dart';
 
-class BranchSelectionPage extends StatelessWidget {
-  const BranchSelectionPage({Key? key}) : super(key: key);
+class BranchSelectionPage extends StatefulWidget {
+  final SIPUAHelper? helper;
+
+  const BranchSelectionPage(this.helper, {Key? key}) : super(key: key);
+
+  @override
+  State<BranchSelectionPage> createState() => _BranchSelectionPageState();
+}
+
+class _BranchSelectionPageState extends State<BranchSelectionPage> {
+  late final BranchBloc _branchBloc;
+
+  @override
+  void initState() {
+    super.initState();
+    _branchBloc = BranchBloc()..add(LoadBranches());
+  }
+
+  @override
+  void dispose() {
+    _branchBloc.close();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => BranchBloc()..add(LoadBranches()),
+    return BlocProvider.value(
+      value: _branchBloc,
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F6FA),
         body: SafeArea(
           child: Column(
             children: [
-              // Expanded supaya layout bisa hitung tinggi Stack
               Expanded(
                 child: Stack(
                   alignment: Alignment.topCenter,
@@ -63,9 +84,9 @@ class BranchSelectionPage extends StatelessWidget {
                       ),
                     ),
 
-                    // CARD di bawah header
+                    // CARD
                     Positioned(
-                      top: 160, // ⬅️ agar card mulai di bawah header
+                      top: 160,
                       left: 24,
                       right: 24,
                       child: SingleChildScrollView(
@@ -106,8 +127,6 @@ class BranchSelectionPage extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 24),
-
-                              // Bloc Dropdown & Button
                               BlocBuilder<BranchBloc, BranchState>(
                                 builder: (context, state) {
                                   if (state is BranchLoading) {
@@ -158,16 +177,18 @@ class BranchSelectionPage extends StatelessWidget {
                                             onPressed: () {
                                               if (state.selectedBranch !=
                                                   null) {
-                                                Navigator.push(
+                                                Navigator.pushNamed(
                                                   context,
-                                                  MaterialPageRoute(
-                                                    builder: (context) =>
-                                                        CallPage(
-                                                      selectedBranch:
-                                                          state.selectedBranch!,
-                                                    ),
-                                                  ),
+                                                  '/call-page',
+                                                  arguments: {
+                                                    'branch':
+                                                        state.selectedBranch,
+                                                  },
                                                 );
+
+                                                // Navigator.pushNamed(
+                                                //     context, '/call-page',
+                                                //     arguments: call);
                                               }
                                             },
                                             child: const Text(

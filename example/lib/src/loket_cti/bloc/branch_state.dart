@@ -10,7 +10,10 @@ class BranchLoaded extends BranchState {
   final List<Branch> branches;
   final Branch? selectedBranch;
 
-  BranchLoaded(this.branches, {this.selectedBranch});
+  BranchLoaded({
+    required this.branches,
+    this.selectedBranch,
+  });
 }
 
 class BranchError extends BranchState {
