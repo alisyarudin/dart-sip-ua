@@ -148,24 +148,20 @@ class _CallPageState extends State<CallPage> implements SipUaHelperListener {
                         horizontal: 16, vertical: 20),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
+                      children: [
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Anita',
-                                style: TextStyle(
-                                    color: Colors.white, fontSize: 16)),
-                            Text('511611',
+                            Text("${widget.selectedBranch.extension}",
                                 style: TextStyle(
                                     color: Colors.white, fontSize: 14)),
                           ],
                         ),
-                        Row(
+                        Column(
                           children: [
-                            Icon(Icons.circle, color: Colors.green, size: 12),
-                            SizedBox(width: 4),
-                            Text('Registered',
-                                style: TextStyle(
+                            Text(
+                                "${_registerState.state?.name ?? 'Loading...'}",
+                                style: const TextStyle(
                                     color: Colors.white, fontSize: 14)),
                           ],
                         ),
@@ -237,10 +233,10 @@ class _CallPageState extends State<CallPage> implements SipUaHelperListener {
                             ),
                           ),
                           const SizedBox(height: 24),
-                          Text(
-                              "Status: ${_registerState.state?.name ?? 'Loading...'}",
-                              style: const TextStyle(
-                                  fontSize: 12, color: Colors.black54)),
+                          // Text(
+                          //     "Status: ${_registerState.state?.name ?? 'Loading...'}",
+                          //     style: const TextStyle(
+                          //         fontSize: 12, color: Colors.black54)),
                         ],
                       ),
                     ),
