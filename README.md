@@ -111,3 +111,25 @@ The project is inseparable from the contributors of the community.
 
 ## License
 dart-sip-ua is released under the [MIT license](https://github.com/cloudwebrtc/dart-sip-ua/blob/master/LICENSE).
+
+
+# presensi_jasnita
+
+A new Flutter project.
+
+
+📦 Build & Release Flutter App
+🔧 Build APK (Android)
+flutter build apk --release
+
+flutter run --release
+
+File hasil build dapat ditemukan di
+build/app/outputs/flutter-apk/app-release.apk
+
+📲 Install APK ke Device/Emulator
+Pastikan device terhubung (adb devices), lalu jalankan:
+adb install build/app/outputs/flutter-apk/app-release.apk
+
+🧾 Build App Bundle (AAB) — untuk Google Play Store
+flutter build appbundle --release
