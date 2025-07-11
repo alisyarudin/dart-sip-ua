@@ -88,13 +88,36 @@ class _CallPageState extends State<CallPage> implements SipUaHelperListener {
 
     var mediaConstraints = <String, dynamic>{
       'audio': true,
-      'video': false, // voice only
+      'video': {
+        'mandatory': <String, dynamic>{
+          'minWidth': '640',
+          'minHeight': '480',
+          'minFrameRate': '30',
+        },
+        'facingMode': 'user',
+      }
     };
 
-    MediaStream mediaStream =
-        await navigator.mediaDevices.getUserMedia(mediaConstraints);
+    MediaStream mediaStream;
+    bool voiceOnly = true;
+    if (kIsWeb && !voiceOnly) {
+      mediaStream =
+          await navigator.mediaDevices.getDisplayMedia(mediaConstraints);
+      mediaConstraints['video'] = false;
+      MediaStream userStream =
+          await navigator.mediaDevices.getUserMedia(mediaConstraints);
+      final audioTracks = userStream.getAudioTracks();
+      if (audioTracks.isNotEmpty) {
+        mediaStream.addTrack(audioTracks.first, addToNative: true);
+      }
+    } else {
+      if (voiceOnly) {
+        mediaConstraints['video'] = !voiceOnly;
+      }
+      mediaStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+    }
 
-    helper!.call(uri, voiceOnly: true, mediaStream: mediaStream);
+    helper!.call(uri, voiceOnly: voiceOnly, mediaStream: mediaStream);
   }
 
   @override

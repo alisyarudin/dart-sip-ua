@@ -57,31 +57,6 @@ class _BranchSelectionPageState extends State<BranchSelectionPage> {
                       ),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 20),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: const [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Anita',
-                                  style: TextStyle(
-                                      color: Colors.white, fontSize: 16)),
-                              Text('511611',
-                                  style: TextStyle(
-                                      color: Colors.white, fontSize: 14)),
-                            ],
-                          ),
-                          Column(
-                            children: [
-                              Icon(Icons.circle, color: Colors.green, size: 12),
-                              SizedBox(width: 4),
-                              Text('Registered',
-                                  style: TextStyle(
-                                      color: Colors.white, fontSize: 14)),
-                            ],
-                          ),
-                        ],
-                      ),
                     ),
 
                     // CARD

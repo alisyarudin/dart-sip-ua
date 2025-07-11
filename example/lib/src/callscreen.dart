@@ -287,6 +287,8 @@ class _MyCallScreenWidget extends State<CallScreenWidget>
   }
 
   void _handleTransfer() {
+    String input = ''; // lokal sementara
+
     showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -295,9 +297,7 @@ class _MyCallScreenWidget extends State<CallScreenWidget>
           title: Text('Enter target to transfer.'),
           content: TextField(
             onChanged: (String text) {
-              setState(() {
-                _transferTarget = text;
-              });
+              input = text.trim();
             },
             decoration: InputDecoration(
               hintText: 'URI or Username',
@@ -308,8 +308,13 @@ class _MyCallScreenWidget extends State<CallScreenWidget>
             TextButton(
               child: Text('Ok'),
               onPressed: () {
-                call!.refer(_transferTarget);
-                Navigator.of(context).pop();
+                if (input.isNotEmpty) {
+                  setState(() {
+                    _transferTarget = input;
+                  });
+                  call!.refer(_transferTarget);
+                  Navigator.of(context).pop();
+                }
               },
             ),
             TextButton(
