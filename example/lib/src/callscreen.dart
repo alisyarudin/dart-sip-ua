@@ -1,4 +1,8 @@
 import 'dart:async';
+import 'package:dart_sip_ua_example/src/notification_helper.dart';
+
+import './incoming_call_native.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
@@ -41,12 +45,18 @@ class _CallScreenWidgetState extends State<CallScreenWidget>
     super.initState();
     helper?.addSipUaHelperListener(this);
     _startTimer();
+    NotificationHelper.init(); // init notification
+    if (direction == Direction.incoming) {
+      _playRingtone();
+      // Start ringtone
+    }
   }
 
   @override
   void dispose() {
     _disposed = true;
     _timer.cancel();
+    _stopRingtone();
     helper?.removeSipUaHelperListener(this);
     _cleanUp();
     super.dispose();
@@ -72,9 +82,18 @@ class _CallScreenWidgetState extends State<CallScreenWidget>
     _localStream = null;
   }
 
+  Future<void> _playRingtone() async {
+    IncomingCallNative.play();
+  }
+
+  Future<void> _stopRingtone() async {
+    IncomingCallNative.stop();
+  }
+
   void _handleAccept() async {
     final mediaConstraints = {'audio': true, 'video': false};
     final stream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+
     call?.answer(helper!.buildCallOptions(true), mediaStream: stream);
     _localStream = stream;
   }
@@ -138,6 +157,11 @@ class _CallScreenWidgetState extends State<CallScreenWidget>
   @override
   void callStateChanged(Call call, CallState state) {
     if (_disposed) return;
+    debugPrint("callStateChanged: ${call.direction}");
+    if (state.state == CallStateEnum.PROGRESS &&
+        call.direction == Direction.incoming) {
+      _playRingtone(); // Start ringtone
+    }
 
     if (state.state == CallStateEnum.HOLD ||
         state.state == CallStateEnum.UNHOLD) {
@@ -168,6 +192,7 @@ class _CallScreenWidgetState extends State<CallScreenWidget>
         break;
       case CallStateEnum.ACCEPTED:
       case CallStateEnum.CONFIRMED:
+        _stopRingtone(); // Stop ringtone when answered or ended
         setState(() => _callConfirmed = true);
         break;
       default:
@@ -337,32 +362,43 @@ class _CallScreenWidgetState extends State<CallScreenWidget>
 
   Widget _buildContent() {
     final textColor = Theme.of(context).textTheme.bodyMedium?.color;
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'VOICE CALL' +
-                (_hold && _holdOriginator != null
-                    ? ' PAUSED BY ${_holdOriginator!.name}'
-                    : ''),
-            style: TextStyle(fontSize: 24, color: textColor),
+
+    return Stack(
+      children: [
+        Positioned(
+          top: MediaQuery.of(context).size.height * 0.12,
+          left: 0,
+          right: 0,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              Text(
+                'VOICE CALL' +
+                    (_hold && _holdOriginator != null
+                        ? ' PAUSED BY ${_holdOriginator!.name}'
+                        : ''),
+                style: TextStyle(fontSize: 24, color: textColor),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                remoteIdentity ?? '',
+                style: TextStyle(fontSize: 18, color: textColor),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 10),
+              ValueListenableBuilder<String>(
+                valueListenable: _timeLabel,
+                builder: (_, value, __) => Text(
+                  value,
+                  style: TextStyle(fontSize: 14, color: textColor),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: 10),
-          Text(
-            remoteIdentity ?? '',
-            style: TextStyle(fontSize: 18, color: textColor),
-          ),
-          SizedBox(height: 10),
-          ValueListenableBuilder<String>(
-            valueListenable: _timeLabel,
-            builder: (_, value, __) => Text(
-              value,
-              style: TextStyle(fontSize: 14, color: textColor),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

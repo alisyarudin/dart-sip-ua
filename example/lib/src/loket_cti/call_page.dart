@@ -1,13 +1,16 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:convert';
+import 'package:dart_sip_ua_example/src/branch_storage_helper.dart';
 import 'package:dart_sip_ua_example/src/user_state/sip_user.dart';
 import 'package:dart_sip_ua_example/src/user_state/sip_user_cubit.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sip_ua/sip_ua.dart';
 import 'models/branch_model.dart';
 import '../callscreen.dart';
@@ -41,12 +44,27 @@ class _CallPageState extends State<CallPage> implements SipUaHelperListener {
     currentUser = Provider.of<SipUserCubit>(context, listen: false);
 
     _registerWithBranch(widget.selectedBranch);
+    saveLastBranch(widget.selectedBranch);
   }
 
   @override
   void dispose() {
     helper?.removeSipUaHelperListener(this);
     super.dispose();
+  }
+
+  Future<void> saveLastBranch(Branch branch) async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setString('last_branch', jsonEncode(branch.toJson()));
+  }
+
+  Future<Branch?> getLastBranch() async {
+    final prefs = await SharedPreferences.getInstance();
+    final json = prefs.getString('last_branch');
+    if (json != null) {
+      return Branch.fromJson(jsonDecode(json));
+    }
+    return null;
   }
 
   void _registerWithBranch(Branch user) {
@@ -123,128 +141,173 @@ class _CallPageState extends State<CallPage> implements SipUaHelperListener {
   @override
   Widget build(BuildContext context) {
     final branch = widget.selectedBranch;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Call to ${branch.displayName}'),
-      ),
-      backgroundColor: const Color(0xFFF5F6FA),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: Stack(
-                children: [
-                  Container(
-                    height: 220,
-                    width: double.infinity,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF2196F3),
-                      borderRadius: BorderRadius.only(
-                        bottomLeft: Radius.circular(24),
-                        bottomRight: Radius.circular(24),
+    return WillPopScope(
+      onWillPop: () async {
+        final confirm = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Konfirmasi'),
+            content: const Text(
+                'Keluar dari halaman akan mengakhiri ini. Lanjutkan?'),
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  await BranchStorageHelper.clearBranch(); // Hapus data branch
+                  Navigator.pop(context,
+                      false); // Tutup dialog, dan tolak keluar dari halaman
+                },
+                child: const Text('Batal'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Ya'),
+              ),
+            ],
+          ),
+        );
+        return confirm ?? false;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Call to ${branch.displayName}'),
+        ),
+        backgroundColor: const Color(0xFFF5F6FA),
+        body: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: Stack(
+                  children: [
+                    Container(
+                      height: 220,
+                      width: double.infinity,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF2196F3),
+                        borderRadius: BorderRadius.only(
+                          bottomLeft: Radius.circular(24),
+                          bottomRight: Radius.circular(24),
+                        ),
                       ),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("${widget.selectedBranch.extension}",
-                                style: TextStyle(
-                                    color: Colors.white, fontSize: 14)),
-                          ],
-                        ),
-                        Column(
-                          children: [
-                            Text(
-                                "${_registerState.state?.name ?? 'Loading...'}",
-                                style: const TextStyle(
-                                    color: Colors.white, fontSize: 14)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  Positioned(
-                    top: 160,
-                    left: 24,
-                    right: 24,
-                    child: Container(
                       padding: const EdgeInsets.symmetric(
-                          vertical: 32, horizontal: 24),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black12,
-                            blurRadius: 10,
-                            offset: Offset(0, 2),
+                          horizontal: 16, vertical: 20),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("${widget.selectedBranch.extension}",
+                                  style: TextStyle(
+                                      color: Colors.white, fontSize: 14)),
+                            ],
+                          ),
+                          Column(
+                            children: [
+                              Text(
+                                  "${_registerState.state?.name ?? 'Loading...'}",
+                                  style: const TextStyle(
+                                      color: Colors.white, fontSize: 14)),
+                            ],
                           ),
                         ],
                       ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Image.asset('assets/logo_175.png', height: 80),
-                          const SizedBox(height: 16),
-                          const Text('Selamat Datang',
-                              style: TextStyle(
-                                  fontSize: 18, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 8),
-                          Text('Anda terhubung pada cabang',
-                              style:
-                                  TextStyle(fontSize: 14, color: Colors.grey)),
-                          const SizedBox(height: 4),
-                          Text(branch.name.toUpperCase(),
-                              style: const TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 24),
-                          GestureDetector(
-                            onTap: _makeCall,
-                            child: Container(
-                              width: 90,
-                              height: 90,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: RadialGradient(
-                                  colors: [
-                                    Colors.greenAccent.withOpacity(0.5),
-                                    Colors.green.withOpacity(0.8),
-                                  ],
-                                  center: Alignment.center,
-                                  radius: 0.8,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.greenAccent.withOpacity(0.6),
-                                    blurRadius: 30,
-                                    spreadRadius: 8,
+                    ),
+                    Positioned(
+                      top: 160,
+                      left: 24,
+                      right: 24,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 32, horizontal: 24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black12,
+                              blurRadius: 10,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // ElevatedButton(
+                            //   onPressed: () {
+                            //     FlutterRingtonePlayer().play(
+                            //       android: AndroidSounds.notification,
+                            //       ios: IosSounds.glass,
+                            //       looping: true,
+                            //       volume: 1.0,
+                            //     );
+                            //   },
+                            //   child: Text('Test Play'),
+                            // ),
+                            // ElevatedButton(
+                            //   onPressed: () {
+                            //     FlutterRingtonePlayer().stop();
+                            //   },
+                            //   child: Text('Test Stop'),
+                            // ),
+                            Image.asset('assets/logo_175.png', height: 80),
+                            const SizedBox(height: 16),
+                            const Text('Selamat Datang',
+                                style: TextStyle(
+                                    fontSize: 18, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 8),
+                            Text('Anda terhubung pada cabang',
+                                style: TextStyle(
+                                    fontSize: 14, color: Colors.grey)),
+                            const SizedBox(height: 4),
+                            Text(branch.name.toUpperCase(),
+                                style: const TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 24),
+                            GestureDetector(
+                              onTap: _makeCall,
+                              child: Container(
+                                width: 90,
+                                height: 90,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: RadialGradient(
+                                    colors: [
+                                      Colors.greenAccent.withOpacity(0.5),
+                                      Colors.green.withOpacity(0.8),
+                                    ],
+                                    center: Alignment.center,
+                                    radius: 0.8,
                                   ),
-                                ],
-                              ),
-                              child: const Center(
-                                child: Icon(Icons.phone,
-                                    size: 36, color: Colors.white),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color:
+                                          Colors.greenAccent.withOpacity(0.6),
+                                      blurRadius: 30,
+                                      spreadRadius: 8,
+                                    ),
+                                  ],
+                                ),
+                                child: const Center(
+                                  child: Icon(Icons.phone,
+                                      size: 36, color: Colors.white),
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 24),
-                          // Text(
-                          //     "Status: ${_registerState.state?.name ?? 'Loading...'}",
-                          //     style: const TextStyle(
-                          //         fontSize: 12, color: Colors.black54)),
-                        ],
+                            const SizedBox(height: 24),
+                            // Text(
+                            //     "Status: ${_registerState.state?.name ?? 'Loading...'}",
+                            //     style: const TextStyle(
+                            //         fontSize: 12, color: Colors.black54)),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -262,7 +325,13 @@ class _CallPageState extends State<CallPage> implements SipUaHelperListener {
 
   @override
   void callStateChanged(Call call, CallState callState) {
-    debugPrint("callStateChanged: ${callState.state}");
+    if (callState.state == CallStateEnum.CALL_INITIATION &&
+        !_navigatedToCallScreen) {
+      _navigatedToCallScreen = true;
+      debugPrint("callStateChanged: ${call.direction}");
+
+      Navigator.pushNamed(context, '/callscreen', arguments: call);
+    }
 
     if (callState.state == CallStateEnum.STREAM && !_navigatedToCallScreen) {
       _navigatedToCallScreen = true;

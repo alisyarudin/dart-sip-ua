@@ -27,7 +27,9 @@
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
     <application
+       android:usesCleartextTraffic="true"
         android:label="Loket 175"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
@@ -58,6 +60,11 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+              <!-- Tambahkan ini untuk CallKit -->
+    <service
+        android:name="com.hiennv.flutter_callkit_incoming.CallkitNotificationService"
+        android:exported="false"/>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

@@ -156,6 +156,36 @@ final List<Map<String, dynamic>> _mockJson = [
     "updated_at": null
   },
   {
+    "id": 32,
+    "client_id": "175JMO",
+    "server": "https://issb.jasnita.co.id",
+    "port": "5066",
+    "protocol": "wss",
+    "add_to_pbx": "1",
+    "destination_call": "114995166153942763324085775247703",
+    "tech": "pjsip",
+    "display_name": "CALL PROVIDER",
+    "extension": "9100000",
+    "password": "password-9100000",
+    "created_at": null,
+    "updated_at": null
+  },
+  {
+    "id": 32,
+    "client_id": "175JMO",
+    "server": "https://issb.jasnita.co.id",
+    "port": "5066",
+    "protocol": "wss",
+    "add_to_pbx": "1",
+    "destination_call": "1810",
+    "tech": "pjsip",
+    "display_name": "CALL PROVIDER11",
+    "extension": "9100000",
+    "password": "password-9100000",
+    "created_at": null,
+    "updated_at": null
+  },
+  {
     "id": 33,
     "client_id": "175JMO",
     "server": "https://issb.jasnita.co.id",
