@@ -21,6 +21,8 @@ import 'models/branch_model.dart';
 import '../callscreen.dart';
 import 'package:dart_sip_ua_example/main.dart';
 
+import 'package:android_intent_plus/android_intent.dart';
+
 class CallPage extends StatefulWidget {
   final Branch selectedBranch;
   final SIPUAHelper? _helper;
@@ -48,6 +50,22 @@ class _CallPageState extends State<CallPage>
   late SipUserCubit currentUser;
   Call? _activeCall;
   @override
+  Future<void> launchAppFromCallKit() async {
+    const packageName =
+        'com.github.cloudwebrtc.dart_sip_ua_example'; // Ganti dengan applicationId kamu jika berbeda
+    const activityName =
+        'com.github.cloudwebrtc.dart_sip_ua_example.MainActivity';
+
+    final intent = AndroidIntent(
+      action: 'android.intent.action.MAIN',
+      category: 'android.intent.category.LAUNCHER',
+      package: packageName,
+      componentName: '$activityName',
+    );
+
+    await intent.launch();
+  }
+
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this); // 👈
@@ -58,9 +76,8 @@ class _CallPageState extends State<CallPage>
     _registerWithBranch(widget.selectedBranch);
     saveLastBranch(widget.selectedBranch);
 
-    _checkInitialIncomingCall();
     // ✅ Tambahkan listener FlutterCallkitIncoming
-    FlutterCallkitIncoming.onEvent.listen((CallEvent? event) {
+    FlutterCallkitIncoming.onEvent.listen((CallEvent? event) async {
       final evt = event?.event;
       if (evt == null) return;
 
@@ -68,15 +85,9 @@ class _CallPageState extends State<CallPage>
         case Event.actionCallAccept:
           debugPrint('Call accepted via CallKit');
 
-          Future.delayed(const Duration(milliseconds: 300), () {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (!_navigatedToCallScreen && _activeCall != null) {
-                _navigatedToCallScreen = true;
-                navigatorKey.currentState
-                    ?.pushNamed('/callscreen', arguments: _activeCall);
-              }
-            });
-          });
+          // 👇 Buka app jika di background
+          await launchAppFromCallKit();
+          _checkInitialIncomingCall();
 
           break;
 
@@ -175,6 +186,7 @@ class _CallPageState extends State<CallPage>
 
     if (state == AppLifecycleState.resumed) {
       _checkActiveCallOnResume();
+      _registerWithBranch(widget.selectedBranch);
     }
 
     if (state == AppLifecycleState.paused ||
@@ -295,6 +307,24 @@ class _CallPageState extends State<CallPage>
     final branch = widget.selectedBranch;
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
+      appBar: AppBar(
+        title: Text('Call to ${branch.displayName}'),
+        actions: [
+          IconButton(
+            icon: Icon(
+                Icons.account_tree), // atau Icons.business, sesuai preferensi
+            tooltip: 'Back to Branch',
+            onPressed: () async {
+              await BranchStorageHelper.clearBranch(); // Hapus data branch
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/', // Ganti sesuai route halaman pemilihan branch-mu
+                (route) => false,
+              );
+            },
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Column(
           children: [
