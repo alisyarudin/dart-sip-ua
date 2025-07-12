@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'package:dart_sip_ua_example/src/notification_helper.dart';
-
+import 'package:flutter_callkit_incoming/entities/android_params.dart';
+import 'package:flutter_callkit_incoming/entities/call_kit_params.dart';
+import 'package:flutter_callkit_incoming/entities/ios_params.dart';
+import 'package:flutter_callkit_incoming/flutter_callkit_incoming.dart';
 import './incoming_call_native.dart';
 
 import 'package:flutter/foundation.dart';
@@ -96,6 +99,11 @@ class _CallScreenWidgetState extends State<CallScreenWidget>
 
     call?.answer(helper!.buildCallOptions(true), mediaStream: stream);
     _localStream = stream;
+
+    if (!kIsWeb && _localStream != null) {
+      // ✅ Pastikan speaker dimatikan saat call dimulai
+      _localStream!.getAudioTracks()[0].enableSpeakerphone(false);
+    }
   }
 
   void _handleHangup() {
@@ -160,6 +168,9 @@ class _CallScreenWidgetState extends State<CallScreenWidget>
     debugPrint("callStateChanged: ${call.direction}");
     if (state.state == CallStateEnum.PROGRESS &&
         call.direction == Direction.incoming) {
+      // ✅ Tampilkan notifikasi callkit
+      // Tambahkan delay atau handler untuk lanjut ke call screen jika jawab
+      // Bisa juga dipindah ke FlutterCallkitIncoming.onEvent listener
       _playRingtone(); // Start ringtone
     }
 
@@ -184,10 +195,12 @@ class _CallScreenWidgetState extends State<CallScreenWidget>
 
     switch (state.state) {
       case CallStateEnum.STREAM:
+        _stopRingtone();
         _handleStreams(state);
         break;
       case CallStateEnum.ENDED:
       case CallStateEnum.FAILED:
+        _stopRingtone();
         _backToDialPad();
         break;
       case CallStateEnum.ACCEPTED:

@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart'
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:sip_ua/sip_ua.dart';
 
@@ -15,11 +16,24 @@ import 'src/callscreen.dart';
 import 'src/dialpad.dart';
 import 'src/register.dart';
 
-void main() {
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+Future<void> _requestPermissions() async {
+  await [
+    Permission.systemAlertWindow,
+    Permission.notification,
+  ].request();
+}
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized(); // WAJIB
   Logger.level = Level.warning;
   if (WebRTC.platformIsDesktop) {
     debugDefaultTargetPlatformOverride = TargetPlatform.fuchsia;
   }
+
+  await _requestPermissions(); // 👈 Tambahkan ini
+
   runApp(
     MultiProvider(
       providers: [ChangeNotifierProvider(create: (_) => ThemeProvider())],
@@ -78,7 +92,8 @@ class MyApp extends StatelessWidget {
             create: (context) => SipUserCubit(sipHelper: _helper)),
       ],
       child: MaterialApp(
-        title: 'Flutter Demo',
+        navigatorKey: navigatorKey,
+        title: 'CALL VOIP',
         theme: Provider.of<ThemeProvider>(context).currentTheme,
         initialRoute: '/',
         onGenerateRoute: _onGenerateRoute,

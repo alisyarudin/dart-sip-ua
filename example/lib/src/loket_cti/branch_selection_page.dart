@@ -31,7 +31,7 @@ class _BranchSelectionPageState extends State<BranchSelectionPage> {
     final savedBranch = await BranchStorageHelper.loadBranch();
     if (savedBranch != null) {
       if (mounted) {
-        Navigator.pushNamed(
+        Navigator.pushReplacementNamed(
           context,
           '/call-page',
           arguments: {'branch': savedBranch},
@@ -260,7 +260,7 @@ class _BranchSelectionPageState extends State<BranchSelectionPage> {
                                             ),
                                             onPressed: () {
                                               if (selected != null) {
-                                                Navigator.pushNamed(
+                                                Navigator.pushReplacementNamed(
                                                   context,
                                                   '/call-page',
                                                   arguments: {

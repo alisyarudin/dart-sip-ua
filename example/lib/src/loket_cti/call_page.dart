@@ -6,6 +6,11 @@ import 'package:dart_sip_ua_example/src/user_state/sip_user.dart';
 import 'package:dart_sip_ua_example/src/user_state/sip_user_cubit.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_callkit_incoming/entities/android_params.dart';
+import 'package:flutter_callkit_incoming/entities/call_event.dart';
+import 'package:flutter_callkit_incoming/entities/call_kit_params.dart';
+import 'package:flutter_callkit_incoming/entities/ios_params.dart';
+import 'package:flutter_callkit_incoming/flutter_callkit_incoming.dart';
 import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -14,6 +19,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sip_ua/sip_ua.dart';
 import 'models/branch_model.dart';
 import '../callscreen.dart';
+import 'package:dart_sip_ua_example/main.dart';
 
 class CallPage extends StatefulWidget {
   final Branch selectedBranch;
@@ -29,26 +35,84 @@ class CallPage extends StatefulWidget {
   State<CallPage> createState() => _CallPageState();
 }
 
-class _CallPageState extends State<CallPage> implements SipUaHelperListener {
+class _CallPageState extends State<CallPage>
+    with WidgetsBindingObserver
+    implements SipUaHelperListener {
+  AppLifecycleState _appLifecycleState = AppLifecycleState.resumed;
+
   RegistrationState _registerState = RegistrationState();
   bool _isRegistered = false;
   bool _hasNavigatedToCallScreen = false;
+  bool _navigatedToCallScreen = false;
   SIPUAHelper? get helper => widget._helper;
   late SipUserCubit currentUser;
-
+  Call? _activeCall;
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this); // 👈
     helper?.addSipUaHelperListener(this);
 
     currentUser = Provider.of<SipUserCubit>(context, listen: false);
 
     _registerWithBranch(widget.selectedBranch);
     saveLastBranch(widget.selectedBranch);
+
+    _checkInitialIncomingCall();
+    // ✅ Tambahkan listener FlutterCallkitIncoming
+    FlutterCallkitIncoming.onEvent.listen((CallEvent? event) {
+      final evt = event?.event;
+      if (evt == null) return;
+
+      switch (evt) {
+        case Event.actionCallAccept:
+          debugPrint('Call accepted via CallKit');
+
+          Future.delayed(const Duration(milliseconds: 300), () {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!_navigatedToCallScreen && _activeCall != null) {
+                _navigatedToCallScreen = true;
+                navigatorKey.currentState
+                    ?.pushNamed('/callscreen', arguments: _activeCall);
+              }
+            });
+          });
+
+          break;
+
+        case Event.actionCallDecline:
+          debugPrint('Call declined via CallKit');
+          _activeCall?.hangup();
+          break;
+
+        default:
+          break;
+      }
+    });
+  }
+
+  Future<void> _checkInitialIncomingCall() async {
+    final calls = await FlutterCallkitIncoming.activeCalls();
+
+    if (calls.isNotEmpty && !_navigatedToCallScreen) {
+      final callData = calls.first;
+      final isIncoming = callData['extra']?['direction'] ==
+          'incoming'; // pastikan kamu set ini saat showIncomingCall
+
+      if (_activeCall != null && isIncoming) {
+        _navigatedToCallScreen = true;
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          navigatorKey.currentState
+              ?.pushNamed('/callscreen', arguments: _activeCall);
+        });
+      }
+    }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this); // 👈
     helper?.removeSipUaHelperListener(this);
     super.dispose();
   }
@@ -67,6 +131,59 @@ class _CallPageState extends State<CallPage> implements SipUaHelperListener {
     return null;
   }
 
+  Future<void> _checkCallAndShowCallKit() async {
+    if (_activeCall != null &&
+        _activeCall!.direction == Direction.incoming &&
+        !_navigatedToCallScreen) {
+      debugPrint('📞 App minimized while ringing — trigger CallKit again');
+
+      showIncomingCall(
+        id: _activeCall!.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        name: _activeCall!.remote_display_name ?? 'Panggilan Masuk',
+      );
+    }
+  }
+
+  Future<void> _checkActiveCallOnResume() async {
+    if (_activeCall != null &&
+        !_navigatedToCallScreen &&
+        (_activeCall!.direction == Direction.incoming ||
+            _activeCall!.direction == Direction.outgoing)) {
+      debugPrint('↩️ App resumed — navigate to call screen');
+      _navigatedToCallScreen = true;
+      navigatorKey.currentState
+          ?.pushNamed('/callscreen', arguments: _activeCall);
+      return;
+    }
+
+    final callkitCalls = await FlutterCallkitIncoming.activeCalls();
+    if (callkitCalls.isNotEmpty && !_navigatedToCallScreen) {
+      debugPrint('📲 Found CallKit call on resume');
+
+      if (_activeCall != null) {
+        _navigatedToCallScreen = true;
+        navigatorKey.currentState
+            ?.pushNamed('/callscreen', arguments: _activeCall);
+      }
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _appLifecycleState = state;
+    debugPrint('📱 AppLifecycleState: $state');
+
+    if (state == AppLifecycleState.resumed) {
+      _checkActiveCallOnResume();
+    }
+
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
+      _checkCallAndShowCallKit(); // saat swipe ke minimize
+    }
+  }
+
   void _registerWithBranch(Branch user) {
     currentUser.register(SipUser(
       selectedTransport: TransportType.WS,
@@ -78,6 +195,41 @@ class _CallPageState extends State<CallPage> implements SipUaHelperListener {
       password: user.password,
       authUser: user.extension,
     ));
+  }
+
+  void showIncomingCall({required String id, required String name}) async {
+    final params = CallKitParams(
+      id: id,
+      nameCaller: name,
+      appName: 'Loket CTI',
+      avatar: '',
+      handle: '082112345678',
+      type: 0,
+      duration: 30000,
+      textAccept: 'Answer',
+      textDecline: 'Decline',
+      extra: {
+        'userId': 'loket-xyz',
+        'direction': 'incoming', // ⬅ tambahkan ini
+      },
+      android: AndroidParams(
+        isCustomNotification: false,
+        isShowLogo: false,
+        ringtonePath: 'system_ringtone_default',
+        backgroundColor: '#0955fa',
+        backgroundUrl: '',
+        actionColor: '#4CAF50',
+      ),
+      ios: IOSParams(
+        iconName: 'CallKitLogo',
+        handleType: '',
+        supportsVideo: false,
+        maximumCallGroups: 1,
+        maximumCallsPerCallGroup: 1,
+      ),
+    );
+
+    await FlutterCallkitIncoming.showCallkitIncoming(params);
   }
 
   String _hostFromUrl(String url) {
@@ -141,173 +293,142 @@ class _CallPageState extends State<CallPage> implements SipUaHelperListener {
   @override
   Widget build(BuildContext context) {
     final branch = widget.selectedBranch;
-    return WillPopScope(
-      onWillPop: () async {
-        final confirm = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Konfirmasi'),
-            content: const Text(
-                'Keluar dari halaman akan mengakhiri ini. Lanjutkan?'),
-            actions: [
-              TextButton(
-                onPressed: () async {
-                  await BranchStorageHelper.clearBranch(); // Hapus data branch
-                  Navigator.pop(context,
-                      false); // Tutup dialog, dan tolak keluar dari halaman
-                },
-                child: const Text('Batal'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Ya'),
-              ),
-            ],
-          ),
-        );
-        return confirm ?? false;
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text('Call to ${branch.displayName}'),
-        ),
-        backgroundColor: const Color(0xFFF5F6FA),
-        body: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: Stack(
-                  children: [
-                    Container(
-                      height: 220,
-                      width: double.infinity,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF2196F3),
-                        borderRadius: BorderRadius.only(
-                          bottomLeft: Radius.circular(24),
-                          bottomRight: Radius.circular(24),
-                        ),
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F6FA),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: Stack(
+                children: [
+                  Container(
+                    height: 220,
+                    width: double.infinity,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF2196F3),
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(24),
+                        bottomRight: Radius.circular(24),
                       ),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("${widget.selectedBranch.extension}",
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 14)),
+                          ],
+                        ),
+                        Column(
+                          children: [
+                            Text(
+                                "${_registerState.state?.name ?? 'Loading...'}",
+                                style: const TextStyle(
+                                    color: Colors.white, fontSize: 14)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    top: 160,
+                    left: 24,
+                    right: 24,
+                    child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 20),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text("${widget.selectedBranch.extension}",
-                                  style: TextStyle(
-                                      color: Colors.white, fontSize: 14)),
-                            ],
-                          ),
-                          Column(
-                            children: [
-                              Text(
-                                  "${_registerState.state?.name ?? 'Loading...'}",
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 14)),
-                            ],
+                          vertical: 32, horizontal: 24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: 10,
+                            offset: Offset(0, 2),
                           ),
                         ],
                       ),
-                    ),
-                    Positioned(
-                      top: 160,
-                      left: 24,
-                      right: 24,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 32, horizontal: 24),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black12,
-                              blurRadius: 10,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // ElevatedButton(
-                            //   onPressed: () {
-                            //     FlutterRingtonePlayer().play(
-                            //       android: AndroidSounds.notification,
-                            //       ios: IosSounds.glass,
-                            //       looping: true,
-                            //       volume: 1.0,
-                            //     );
-                            //   },
-                            //   child: Text('Test Play'),
-                            // ),
-                            // ElevatedButton(
-                            //   onPressed: () {
-                            //     FlutterRingtonePlayer().stop();
-                            //   },
-                            //   child: Text('Test Stop'),
-                            // ),
-                            Image.asset('assets/logo_175.png', height: 80),
-                            const SizedBox(height: 16),
-                            const Text('Selamat Datang',
-                                style: TextStyle(
-                                    fontSize: 18, fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 8),
-                            Text('Anda terhubung pada cabang',
-                                style: TextStyle(
-                                    fontSize: 14, color: Colors.grey)),
-                            const SizedBox(height: 4),
-                            Text(branch.name.toUpperCase(),
-                                style: const TextStyle(
-                                    fontSize: 16, fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 24),
-                            GestureDetector(
-                              onTap: _makeCall,
-                              child: Container(
-                                width: 90,
-                                height: 90,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: RadialGradient(
-                                    colors: [
-                                      Colors.greenAccent.withOpacity(0.5),
-                                      Colors.green.withOpacity(0.8),
-                                    ],
-                                    center: Alignment.center,
-                                    radius: 0.8,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color:
-                                          Colors.greenAccent.withOpacity(0.6),
-                                      blurRadius: 30,
-                                      spreadRadius: 8,
-                                    ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // ElevatedButton(
+                          //   onPressed: () {
+                          //     FlutterRingtonePlayer().play(
+                          //       android: AndroidSounds.notification,
+                          //       ios: IosSounds.glass,
+                          //       looping: true,
+                          //       volume: 1.0,
+                          //     );
+                          //   },
+                          //   child: Text('Test Play'),
+                          // ),
+                          // ElevatedButton(
+                          //   onPressed: () {
+                          //     FlutterRingtonePlayer().stop();
+                          //   },
+                          //   child: Text('Test Stop'),
+                          // ),
+                          Image.asset('assets/logo_175.png', height: 80),
+                          const SizedBox(height: 16),
+                          const Text('Selamat Datang',
+                              style: TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 8),
+                          Text('Anda terhubung pada cabang',
+                              style:
+                                  TextStyle(fontSize: 14, color: Colors.grey)),
+                          const SizedBox(height: 4),
+                          Text(branch.name.toUpperCase(),
+                              style: const TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 24),
+                          GestureDetector(
+                            onTap: _makeCall,
+                            child: Container(
+                              width: 90,
+                              height: 90,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: RadialGradient(
+                                  colors: [
+                                    Colors.greenAccent.withOpacity(0.5),
+                                    Colors.green.withOpacity(0.8),
                                   ],
+                                  center: Alignment.center,
+                                  radius: 0.8,
                                 ),
-                                child: const Center(
-                                  child: Icon(Icons.phone,
-                                      size: 36, color: Colors.white),
-                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.greenAccent.withOpacity(0.6),
+                                    blurRadius: 30,
+                                    spreadRadius: 8,
+                                  ),
+                                ],
+                              ),
+                              child: const Center(
+                                child: Icon(Icons.phone,
+                                    size: 36, color: Colors.white),
                               ),
                             ),
-                            const SizedBox(height: 24),
-                            // Text(
-                            //     "Status: ${_registerState.state?.name ?? 'Loading...'}",
-                            //     style: const TextStyle(
-                            //         fontSize: 12, color: Colors.black54)),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(height: 24),
+                          // Text(
+                          //     "Status: ${_registerState.state?.name ?? 'Loading...'}",
+                          //     style: const TextStyle(
+                          //         fontSize: 12, color: Colors.black54)),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -321,27 +442,54 @@ class _CallPageState extends State<CallPage> implements SipUaHelperListener {
     });
   }
 
-  bool _navigatedToCallScreen = false;
-
   @override
   void callStateChanged(Call call, CallState callState) {
+    _activeCall = call; // simpan referensi call
+    debugPrint("callStateChanged: ${call.direction}");
+    // ✅ 1. Tangani panggilan MASUK (hanya showIncomingCall saja, tanpa navigate)
     if (callState.state == CallStateEnum.CALL_INITIATION &&
-        !_navigatedToCallScreen) {
-      _navigatedToCallScreen = true;
-      debugPrint("callStateChanged: ${call.direction}");
+        !_navigatedToCallScreen &&
+        call.direction == Direction.incoming) {
+      debugPrint('📞 INCOMING callStateChanged');
 
+      if (_appLifecycleState == AppLifecycleState.resumed) {
+        // App sedang foreground, langsung navigate
+        _navigatedToCallScreen = true;
+        Navigator.pushNamed(context, '/callscreen', arguments: call);
+      } else {
+        // App sedang background — tampilkan CallKit saja
+        showIncomingCall(
+          id: call.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+          name: call.remote_display_name ?? 'Panggilan Masuk',
+        );
+      }
+      // ❌ Jangan navigasi langsung di sini — tunggu user tekan Answer
+    }
+
+    // ✅ 2. Tangani panggilan KELUAR (langsung masuk call screen)
+    if (callState.state == CallStateEnum.CALL_INITIATION &&
+        !_navigatedToCallScreen &&
+        call.direction == Direction.outgoing) {
+      _navigatedToCallScreen = true;
       Navigator.pushNamed(context, '/callscreen', arguments: call);
     }
 
-    if (callState.state == CallStateEnum.STREAM && !_navigatedToCallScreen) {
+    // // ✅ 3. Jika call langsung masuk STREAM (fallback untuk web/non-CallKit)
+    if (callState.state == CallStateEnum.STREAM &&
+        !_navigatedToCallScreen &&
+        _appLifecycleState == AppLifecycleState.resumed) {
       _navigatedToCallScreen = true;
       Navigator.pushNamed(context, '/callscreen', arguments: call);
     }
 
+    // ✅ 4. Reset jika call selesai
     if (callState.state == CallStateEnum.FAILED ||
         callState.state == CallStateEnum.ENDED) {
-      _navigatedToCallScreen = false; // reset agar bisa panggil ulang nanti
-      // reRegisterWithCurrentUser();
+      _navigatedToCallScreen = false;
+      _activeCall = null;
+
+      // ✅ Tutup CallKit UI jika masih terbuka
+      FlutterCallkitIncoming.endAllCalls();
     }
   }
 
