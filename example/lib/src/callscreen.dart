@@ -2,11 +2,8 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:io' as io;
 import 'package:dart_sip_ua_example/src/notification_helper.dart';
-import 'package:flutter_callkit_incoming/entities/android_params.dart';
-import 'package:flutter_callkit_incoming/entities/call_kit_params.dart';
-import 'package:flutter_callkit_incoming/entities/ios_params.dart';
-import 'package:flutter_callkit_incoming/flutter_callkit_incoming.dart';
-import './incoming_call_native.dart';
+import 'package:dart_sip_ua_example/src/ringtone_helper.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -52,7 +49,7 @@ class _CallScreenWidgetState extends State<CallScreenWidget>
     _startTimer();
 
     if (direction == Direction.incoming) {
-      _playRingtone();
+      RingtoneHelper.play(); // Start ringtone
       // Start ringtone
     }
   }
@@ -61,7 +58,7 @@ class _CallScreenWidgetState extends State<CallScreenWidget>
   void dispose() {
     _disposed = true;
     _timer.cancel();
-    _stopRingtone();
+    RingtoneHelper.stop(); // Stop ringtone
     helper?.removeSipUaHelperListener(this);
     _cleanUp();
     super.dispose();
@@ -85,24 +82,6 @@ class _CallScreenWidgetState extends State<CallScreenWidget>
     _localStream?.getTracks().forEach((track) => track.stop());
     _localStream?.dispose();
     _localStream = null;
-  }
-
-  Future<void> _playRingtone() async {
-    if (NotificationHelper.isMobilePlatform()) {
-      IncomingCallNative.play();
-    } else {
-      debugPrint('🛑 Platform tidak mendukung pemutaran ringtone.');
-      return;
-    }
-  }
-
-  Future<void> _stopRingtone() async {
-    if (NotificationHelper.isMobilePlatform()) {
-      IncomingCallNative.stop();
-    } else {
-      debugPrint('🛑 Platform tidak mendukung pemutaran ringtone.');
-      return;
-    }
   }
 
   void _handleAccept() async {
@@ -189,7 +168,7 @@ class _CallScreenWidgetState extends State<CallScreenWidget>
       // ✅ Tampilkan notifikasi callkit
       // Tambahkan delay atau handler untuk lanjut ke call screen jika jawab
       // Bisa juga dipindah ke FlutterCallkitIncoming.onEvent listener
-      _playRingtone(); // Start ringtone
+      RingtoneHelper.play(); // Start ringtone
     }
 
     if (state.state == CallStateEnum.HOLD ||
@@ -213,17 +192,17 @@ class _CallScreenWidgetState extends State<CallScreenWidget>
 
     switch (state.state) {
       case CallStateEnum.STREAM:
-        _stopRingtone();
+        RingtoneHelper.stop(); // Stop ringtone
         _handleStreams(state);
         break;
       case CallStateEnum.ENDED:
       case CallStateEnum.FAILED:
-        _stopRingtone();
+        RingtoneHelper.stop(); // Stop ringtone
         _backToDialPad();
         break;
       case CallStateEnum.ACCEPTED:
       case CallStateEnum.CONFIRMED:
-        _stopRingtone(); // Stop ringtone when answered or ended
+        RingtoneHelper.stop(); // Stop ringtone
         setState(() => _callConfirmed = true);
         break;
       default:

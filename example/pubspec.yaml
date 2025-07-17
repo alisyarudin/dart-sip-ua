@@ -36,6 +36,7 @@ dependencies:
   android_intent_plus: ^5.3.0
   window_manager: ^0.5.1
   local_notifier: ^0.1.6
+  audioplayers: ^6.5.0
   
 dev_dependencies:
   flutter_test:
@@ -80,3 +81,4 @@ flutter:
   # see https://flutter.dev/custom-fonts/#from-packages
   assets:
     - assets/logo_175.png
+    - assets/ringtone.wav
