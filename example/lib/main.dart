@@ -34,9 +34,9 @@ Future<void> _requestPermissions() async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await windowManager.ensureInitialized();
 
   if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+    await windowManager.ensureInitialized();
     await NotificationWinHelper.init();
 
     final logFile = File('log.txt');
@@ -78,6 +78,13 @@ void main() async {
       await windowManager.show();
       await windowManager.focus();
     });
+  } else {
+    runApp(
+      MultiProvider(
+        providers: [ChangeNotifierProvider(create: (_) => ThemeProvider())],
+        child: MyApp(),
+      ),
+    );
   }
 
   Logger.level = Level.warning;

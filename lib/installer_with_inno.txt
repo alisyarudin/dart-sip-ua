@@ -1,0 +1,47 @@
+[Setup]
+AppName=My Flutter App
+AppVersion=1.0.0
+DefaultDirName={pf}\My Flutter App
+DefaultGroupName=My Flutter App
+OutputDir=C:\FlutterAppDist\Output
+OutputBaseFilename=MyFlutterAppInstaller
+Compression=lzma
+SolidCompression=yes
+
+[Languages]
+Name: "english"; MessagesFile: "compiler:Default.isl"
+
+[Files]
+Source: "C:\FlutterAppDist\MyApp\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs
+Source: "C:\FlutterAppDist\MyApp\vc_redist.x64.exe"; DestDir: "{tmp}"; Flags: ignoreversion
+
+[Icons]
+Name: "{group}\My Flutter App"; Filename: "{app}\MyApp.exe"
+Name: "{group}\Uninstall My Flutter App"; Filename: "{uninstallexe}"
+
+[Run]
+Filename: "{tmp}\vc_redist.x64.exe"; \
+  Parameters: "/install /quiet /norestart"; \
+  StatusMsg: "Installing Microsoft VC++ Redistributable..."; \
+  Flags: skipifdoesntexist
+
+[Code]
+// Cek apakah VC++ Redistributable sudah terpasang (2015-2022)
+function IsVCInstalled(): Boolean;
+var
+  installKey: String;
+begin
+  installKey := 'SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64';
+  Result := RegKeyExists(HKLM, installKey);
+end;
+
+function InitializeSetup(): Boolean;
+begin
+  if IsVCInstalled() then begin
+    Log('VC++ 2015-2022 Redistributable found.');
+    Result := True;
+  end else begin
+    MsgBox('Microsoft VC++ Redistributable belum ditemukan. Akan dipasang sekarang.', mbInformation, MB_OK);
+    Result := True;
+  end;
+end;
