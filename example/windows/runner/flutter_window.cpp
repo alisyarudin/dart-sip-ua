@@ -47,24 +47,38 @@ void FlutterWindow::OnDestroy() {
   Win32Window::OnDestroy();
 }
 
-LRESULT
-FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
-                              WPARAM const wparam,
-                              LPARAM const lparam) noexcept {
-  // Give Flutter, including plugins, an opportunity to handle window messages.
+LRESULT FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
+                                      WPARAM const wparam,
+                                      LPARAM const lparam) noexcept {
+  switch (message) {
+    case WM_SYSCOMMAND:
+      if (wparam == SC_CLOSE) {
+        int result = MessageBox(hwnd,
+                                L"Yakin ingin keluar dari aplikasi?",
+                                L"Konfirmasi",
+                                MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2);
+        if (result == IDYES) {
+          PostQuitMessage(0);  // keluar aplikasi
+        } else {
+          return 0;  // batalkan close
+        }
+      } else if (wparam == SC_MINIMIZE) {
+        ShowWindow(hwnd, SW_HIDE);  // sembunyikan ke tray saat minimize
+        return 0;
+      }
+      break;
+  }
+
   if (flutter_controller_) {
     std::optional<LRESULT> result =
-        flutter_controller_->HandleTopLevelWindowProc(hwnd, message, wparam,
-                                                      lparam);
+        flutter_controller_->HandleTopLevelWindowProc(hwnd, message, wparam, lparam);
     if (result) {
       return *result;
     }
   }
 
-  switch (message) {
-    case WM_FONTCHANGE:
-      flutter_controller_->engine()->ReloadSystemFonts();
-      break;
+  if (message == WM_FONTCHANGE && flutter_controller_) {
+    flutter_controller_->engine()->ReloadSystemFonts();
   }
 
   return Win32Window::MessageHandler(hwnd, message, wparam, lparam);

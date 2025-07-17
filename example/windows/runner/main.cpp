@@ -52,6 +52,5 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   if (hMutex) {
     CloseHandle(hMutex);
   }
-  
   return EXIT_SUCCESS;
 }
