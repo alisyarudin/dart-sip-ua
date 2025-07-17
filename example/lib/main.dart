@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:dart_sip_ua_example/src/loket_cti/branch_selection_page.dart';
@@ -34,6 +35,20 @@ Future<void> _requestPermissions() async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // WAJIB
+
+  final logFile = File('log.txt');
+  final sink = logFile.openWrite(mode: FileMode.append);
+  runZonedGuarded(() {
+    runApp(MyApp());
+  }, (error, stack) {
+    sink.writeln('ERROR: $error\n$stack');
+  });
+
+  debugPrint = (String? message, {int? wrapWidth}) {
+    if (message != null) {
+      sink.writeln(message);
+    }
+  };
 
   if (!kIsWeb) {
     if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
@@ -123,7 +138,7 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         navigatorKey: navigatorKey,
         title: 'CALL VOIP',
-        theme: Provider.of<ThemeProvider>(context).currentTheme,
+        theme: Theme.of(context),
         initialRoute: '/',
         onGenerateRoute: _onGenerateRoute,
       ),
