@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:io' as io;
 import 'package:dart_sip_ua_example/src/notification_helper.dart';
 import 'package:flutter_callkit_incoming/entities/android_params.dart';
 import 'package:flutter_callkit_incoming/entities/call_kit_params.dart';
@@ -48,7 +50,7 @@ class _CallScreenWidgetState extends State<CallScreenWidget>
     super.initState();
     helper?.addSipUaHelperListener(this);
     _startTimer();
-    NotificationHelper.init(); // init notification
+
     if (direction == Direction.incoming) {
       _playRingtone();
       // Start ringtone
@@ -86,11 +88,21 @@ class _CallScreenWidgetState extends State<CallScreenWidget>
   }
 
   Future<void> _playRingtone() async {
-    IncomingCallNative.play();
+    if (NotificationHelper.isMobilePlatform()) {
+      IncomingCallNative.play();
+    } else {
+      debugPrint('🛑 Platform tidak mendukung pemutaran ringtone.');
+      return;
+    }
   }
 
   Future<void> _stopRingtone() async {
-    IncomingCallNative.stop();
+    if (NotificationHelper.isMobilePlatform()) {
+      IncomingCallNative.stop();
+    } else {
+      debugPrint('🛑 Platform tidak mendukung pemutaran ringtone.');
+      return;
+    }
   }
 
   void _handleAccept() async {
@@ -100,9 +112,11 @@ class _CallScreenWidgetState extends State<CallScreenWidget>
     call?.answer(helper!.buildCallOptions(true), mediaStream: stream);
     _localStream = stream;
 
-    if (!kIsWeb && _localStream != null) {
-      // ✅ Pastikan speaker dimatikan saat call dimulai
-      _localStream!.getAudioTracks()[0].enableSpeakerphone(false);
+    if (Platform.isAndroid || Platform.isIOS) {
+      if (!kIsWeb && _localStream != null) {
+        // ✅ Pastikan speaker dimatikan saat call dimulai
+        _localStream!.getAudioTracks()[0].enableSpeakerphone(false);
+      }
     }
   }
 
@@ -120,11 +134,15 @@ class _CallScreenWidgetState extends State<CallScreenWidget>
   }
 
   void _toggleSpeaker() {
-    _speakerOn = !_speakerOn;
-    if (!kIsWeb && _localStream != null) {
-      _localStream!.getAudioTracks()[0].enableSpeakerphone(_speakerOn);
+    if (NotificationHelper.isMobilePlatform()) {
+      _speakerOn = !_speakerOn;
+      if (!kIsWeb && _localStream != null) {
+        _localStream!.getAudioTracks()[0].enableSpeakerphone(_speakerOn);
+      }
+      setState(() {});
+    } else {
+      print('🔇 Speakerphone tidak didukung di platform ini');
     }
-    setState(() {});
   }
 
   void _handleTransfer() {
@@ -306,12 +324,15 @@ class _CallScreenWidgetState extends State<CallScreenWidget>
           icon: Icons.dialpad,
           onPressed: _handleKeyPad,
         ));
-        advanced.add(ActionButton(
-          title: _speakerOn ? 'speaker off' : 'speaker on',
-          icon: _speakerOn ? Icons.volume_off : Icons.volume_up,
-          checked: _speakerOn,
-          onPressed: _toggleSpeaker,
-        ));
+
+        if (NotificationHelper.isMobilePlatform()) {
+          advanced.add(ActionButton(
+            title: _speakerOn ? 'speaker off' : 'speaker on',
+            icon: _speakerOn ? Icons.volume_off : Icons.volume_up,
+            checked: _speakerOn,
+            onPressed: _toggleSpeaker,
+          ));
+        }
 
         basic.add(ActionButton(
           title: _hold ? 'unhold' : 'hold',
@@ -472,5 +493,15 @@ class _CallScreenWidgetState extends State<CallScreenWidget>
   void transportStateChanged(TransportState state) {}
 
   @override
-  void registrationStateChanged(RegistrationState state) {}
+  void registrationStateChanged(RegistrationState state) {
+    debugPrint("callStateChanged: ${state.state}");
+    if (state.state == RegistrationStateEnum.REGISTERED) {
+      debugPrint("✅ callStateChanged SIP terdaftar: ${state.state}");
+    } else if (state.state == RegistrationStateEnum.UNREGISTERED) {
+      debugPrint("✅ callStateChanged SIP tdk terdaftar: ${state.state}");
+    } else {
+      debugPrint(
+          "ℹ️callStateChanged Status pendaftaran berubah: ${state.state}");
+    }
+  }
 }

@@ -1,15 +1,22 @@
+import 'dart:io';
+
 import 'package:dart_sip_ua_example/src/loket_cti/branch_selection_page.dart';
 import 'package:dart_sip_ua_example/src/loket_cti/call_page.dart';
+import 'package:dart_sip_ua_example/src/notification_helper.dart';
+import 'package:dart_sip_ua_example/src/notification_window_helper.dart';
 import 'package:dart_sip_ua_example/src/theme_provider.dart';
 import 'package:dart_sip_ua_example/src/user_state/sip_user_cubit.dart';
 import 'package:flutter/foundation.dart'
-    show debugDefaultTargetPlatformOverride;
+    show debugDefaultTargetPlatformOverride, kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:local_notifier/local_notifier.dart';
 import 'package:logger/logger.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:sip_ua/sip_ua.dart';
+import 'package:window_manager/window_manager.dart';
 
 import 'src/about.dart';
 import 'src/callscreen.dart';
@@ -27,6 +34,28 @@ Future<void> _requestPermissions() async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // WAJIB
+
+  if (!kIsWeb) {
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      await windowManager.ensureInitialized();
+
+      await NotificationWinHelper.init();
+
+      WindowOptions windowOptions = const WindowOptions(
+        size: Size(400, 720),
+        center: true,
+        maximumSize: Size(400, 700),
+        backgroundColor: Colors.transparent,
+        skipTaskbar: false,
+        titleBarStyle: TitleBarStyle.normal,
+        windowButtonVisibility: false,
+      );
+      windowManager.waitUntilReadyToShow(windowOptions, () async {
+        await windowManager.show();
+        await windowManager.focus();
+      });
+    }
+  }
   Logger.level = Level.warning;
   if (WebRTC.platformIsDesktop) {
     debugDefaultTargetPlatformOverride = TargetPlatform.fuchsia;

@@ -1,7 +1,10 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:convert';
+import 'dart:io';
 import 'package:dart_sip_ua_example/src/branch_storage_helper.dart';
+import 'package:dart_sip_ua_example/src/notification_helper.dart';
+import 'package:dart_sip_ua_example/src/notification_window_helper.dart';
 import 'package:dart_sip_ua_example/src/user_state/sip_user.dart';
 import 'package:dart_sip_ua_example/src/user_state/sip_user_cubit.dart';
 import 'package:flutter/foundation.dart';
@@ -11,6 +14,7 @@ import 'package:flutter_callkit_incoming/entities/call_event.dart';
 import 'package:flutter_callkit_incoming/entities/call_kit_params.dart';
 import 'package:flutter_callkit_incoming/entities/ios_params.dart';
 import 'package:flutter_callkit_incoming/flutter_callkit_incoming.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -22,6 +26,7 @@ import '../callscreen.dart';
 import 'package:dart_sip_ua_example/main.dart';
 
 import 'package:android_intent_plus/android_intent.dart';
+import 'package:dart_sip_ua_example/src/notification_helper.dart';
 
 class CallPage extends StatefulWidget {
   final Branch selectedBranch;
@@ -49,6 +54,7 @@ class _CallPageState extends State<CallPage>
   SIPUAHelper? get helper => widget._helper;
   late SipUserCubit currentUser;
   Call? _activeCall;
+
   @override
   Future<void> launchAppFromCallKit() async {
     const packageName =
@@ -66,6 +72,9 @@ class _CallPageState extends State<CallPage>
     await intent.launch();
   }
 
+  bool notificationsReady = false;
+
+  @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this); // 👈
@@ -73,33 +82,37 @@ class _CallPageState extends State<CallPage>
 
     currentUser = Provider.of<SipUserCubit>(context, listen: false);
 
+    NotificationHelper.init(); // ⬅️ WAJIB
+
     _registerWithBranch(widget.selectedBranch);
     saveLastBranch(widget.selectedBranch);
 
-    // ✅ Tambahkan listener FlutterCallkitIncoming
-    FlutterCallkitIncoming.onEvent.listen((CallEvent? event) async {
-      final evt = event?.event;
-      if (evt == null) return;
+    if (NotificationHelper.isMobilePlatform()) {
+      // ✅ Tambahkan listener FlutterCallkitIncoming
+      FlutterCallkitIncoming.onEvent.listen((CallEvent? event) async {
+        final evt = event?.event;
+        if (evt == null) return;
 
-      switch (evt) {
-        case Event.actionCallAccept:
-          debugPrint('Call accepted via CallKit');
+        switch (evt) {
+          case Event.actionCallAccept:
+            debugPrint('Call accepted via CallKit');
 
-          // 👇 Buka app jika di background
-          await launchAppFromCallKit();
-          _checkInitialIncomingCall();
+            // 👇 Buka app jika di background
+            await launchAppFromCallKit();
+            _checkInitialIncomingCall();
 
-          break;
+            break;
 
-        case Event.actionCallDecline:
-          debugPrint('Call declined via CallKit');
-          _activeCall?.hangup();
-          break;
+          case Event.actionCallDecline:
+            debugPrint('Call declined via CallKit');
+            _activeCall?.hangup();
+            break;
 
-        default:
-          break;
-      }
-    });
+          default:
+            break;
+        }
+      });
+    }
   }
 
   Future<void> _checkInitialIncomingCall() async {
@@ -148,35 +161,38 @@ class _CallPageState extends State<CallPage>
         !_navigatedToCallScreen) {
       debugPrint('📞 App minimized while ringing — trigger CallKit again');
 
-      showIncomingCall(
-        id: _activeCall!.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        name: _activeCall!.remote_display_name ?? 'Panggilan Masuk',
-      );
+      if (NotificationHelper.isMobilePlatform()) {
+        showIncomingCall(
+          id: _activeCall!.id ??
+              DateTime.now().millisecondsSinceEpoch.toString(),
+          name: _activeCall!.remote_display_name ?? 'Panggilan Masuk',
+        );
+      }
     }
   }
 
   Future<void> _checkActiveCallOnResume() async {
-    if (_activeCall != null &&
-        !_navigatedToCallScreen &&
-        (_activeCall!.direction == Direction.incoming ||
-            _activeCall!.direction == Direction.outgoing)) {
-      debugPrint('↩️ App resumed — navigate to call screen');
-      _navigatedToCallScreen = true;
-      navigatorKey.currentState
-          ?.pushNamed('/callscreen', arguments: _activeCall);
-      return;
-    }
+    // if (_activeCall != null &&
+    //     !_navigatedToCallScreen &&
+    //     (_activeCall!.direction == Direction.incoming ||
+    //         _activeCall!.direction == Direction.outgoing)) {
+    //   debugPrint('↩️ App resumed — navigate to call screen');
+    //   _navigatedToCallScreen = true;
+    //   navigatorKey.currentState
+    //       ?.pushNamed('/callscreen', arguments: _activeCall);
+    //   return;
+    // }
 
-    final callkitCalls = await FlutterCallkitIncoming.activeCalls();
-    if (callkitCalls.isNotEmpty && !_navigatedToCallScreen) {
-      debugPrint('📲 Found CallKit call on resume');
+    // final callkitCalls = await FlutterCallkitIncoming.activeCalls();
+    // if (callkitCalls.isNotEmpty && !_navigatedToCallScreen) {
+    //   debugPrint('📲 Found CallKit call on resume');
 
-      if (_activeCall != null) {
-        _navigatedToCallScreen = true;
-        navigatorKey.currentState
-            ?.pushNamed('/callscreen', arguments: _activeCall);
-      }
-    }
+    //   if (_activeCall != null) {
+    //     _navigatedToCallScreen = true;
+    //     navigatorKey.currentState
+    //         ?.pushNamed('/callscreen', arguments: _activeCall);
+    //   }
+    // }
   }
 
   @override
@@ -184,15 +200,17 @@ class _CallPageState extends State<CallPage>
     _appLifecycleState = state;
     debugPrint('📱 AppLifecycleState: $state');
 
-    if (state == AppLifecycleState.resumed) {
-      _checkActiveCallOnResume();
-      _registerWithBranch(widget.selectedBranch);
-    }
+    if (NotificationHelper.isMobilePlatform()) {
+      if (state == AppLifecycleState.resumed) {
+        _checkActiveCallOnResume();
+        _registerWithBranch(widget.selectedBranch);
+      }
 
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.detached) {
-      _checkCallAndShowCallKit(); // saat swipe ke minimize
+      if (state == AppLifecycleState.paused ||
+          state == AppLifecycleState.inactive ||
+          state == AppLifecycleState.detached) {
+        _checkCallAndShowCallKit(); // saat swipe ke minimize
+      }
     }
   }
 
@@ -310,6 +328,16 @@ class _CallPageState extends State<CallPage>
       appBar: AppBar(
         title: Text('Call to ${branch.displayName}'),
         actions: [
+          // ElevatedButton(
+          //   onPressed: () async {
+          //     await Future.delayed(Duration(seconds: 1)); // tunggu 1 detik
+          //     NotificationWinHelper.showBasic(
+          //       'Panggilan Masuk',
+          //       'Dari Cabang Jakarta',
+          //     );
+          //   },
+          //   child: Text('Test Notifikasi'),
+          // ),
           IconButton(
             icon: Icon(
                 Icons.account_tree), // atau Icons.business, sesuai preferensi
@@ -466,6 +494,7 @@ class _CallPageState extends State<CallPage>
 
   @override
   void registrationStateChanged(RegistrationState state) {
+    debugPrint("callStateChanged: ${state.state}");
     setState(() {
       _registerState = state;
       _isRegistered = state.state == RegistrationStateEnum.REGISTERED;
@@ -473,7 +502,7 @@ class _CallPageState extends State<CallPage>
   }
 
   @override
-  void callStateChanged(Call call, CallState callState) {
+  Future<void> callStateChanged(Call call, CallState callState) async {
     _activeCall = call; // simpan referensi call
     debugPrint("callStateChanged: ${call.direction}");
     // ✅ 1. Tangani panggilan MASUK (hanya showIncomingCall saja, tanpa navigate)
@@ -487,13 +516,20 @@ class _CallPageState extends State<CallPage>
         _navigatedToCallScreen = true;
         Navigator.pushNamed(context, '/callscreen', arguments: call);
       } else {
-        // App sedang background — tampilkan CallKit saja
-        showIncomingCall(
-          id: call.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-          name: call.remote_display_name ?? 'Panggilan Masuk',
-        );
+        if (NotificationHelper.isMobilePlatform()) {
+          showIncomingCall(
+            id: call.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+            name: call.remote_display_name ?? 'Panggilan Masuk',
+          );
+        } else {
+          NotificationWinHelper.showBasic(
+            'Panggilan Masuk',
+            'Dari Cabang Jakarta',
+          );
+
+          Navigator.pushNamed(context, '/callscreen', arguments: call);
+        }
       }
-      // ❌ Jangan navigasi langsung di sini — tunggu user tekan Answer
     }
 
     // ✅ 2. Tangani panggilan KELUAR (langsung masuk call screen)
@@ -518,8 +554,10 @@ class _CallPageState extends State<CallPage>
       _navigatedToCallScreen = false;
       _activeCall = null;
 
-      // ✅ Tutup CallKit UI jika masih terbuka
-      FlutterCallkitIncoming.endAllCalls();
+      if (NotificationHelper.isMobilePlatform()) {
+        // ✅ Tutup CallKit UI jika masih terbuka
+        FlutterCallkitIncoming.endAllCalls();
+      }
     }
   }
 
