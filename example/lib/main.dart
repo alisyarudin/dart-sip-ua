@@ -37,10 +37,38 @@ void main() async {
   await windowManager.ensureInitialized();
 
   if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+    await NotificationWinHelper.init();
+
+    final logFile = File('log.txt');
+    final sink = logFile.openWrite(mode: FileMode.append);
+
+    debugPrint = (String? message, {int? wrapWidth}) {
+      if (message != null) {
+        sink.writeln("[${DateTime.now()}] $message");
+      }
+    };
+
+    runZonedGuarded(() {
+      runZoned(() {
+        runApp(
+          MultiProvider(
+            providers: [ChangeNotifierProvider(create: (_) => ThemeProvider())],
+            child: MyApp(),
+          ),
+        );
+      }, zoneSpecification: ZoneSpecification(
+        print: (self, parent, zone, line) {
+          sink.writeln("[PRINT] $line");
+        },
+      ));
+    }, (error, stack) {
+      sink.writeln("[${DateTime.now()}] ERROR: $error\n$stack");
+    });
+
     WindowOptions windowOptions = const WindowOptions(
-      size: Size(400, 800),
+      size: Size(400, 720),
       center: true,
-      maximumSize: Size(400, 800),
+      maximumSize: Size(400, 700),
       backgroundColor: Colors.transparent,
       skipTaskbar: false,
       titleBarStyle: TitleBarStyle.normal,
@@ -58,34 +86,6 @@ void main() async {
   }
 
   await _requestPermissions();
-
-  await NotificationWinHelper.init();
-
-  final logFile = File('log.txt');
-  final sink = logFile.openWrite(mode: FileMode.append);
-
-  debugPrint = (String? message, {int? wrapWidth}) {
-    if (message != null) {
-      sink.writeln("[${DateTime.now()}] $message");
-    }
-  };
-
-  runZonedGuarded(() {
-    runZoned(() {
-      runApp(
-        MultiProvider(
-          providers: [ChangeNotifierProvider(create: (_) => ThemeProvider())],
-          child: MyApp(),
-        ),
-      );
-    }, zoneSpecification: ZoneSpecification(
-      print: (self, parent, zone, line) {
-        sink.writeln("[PRINT] $line");
-      },
-    ));
-  }, (error, stack) {
-    sink.writeln("[${DateTime.now()}] ERROR: $error\n$stack");
-  });
 }
 
 class MyApp extends StatefulWidget {
