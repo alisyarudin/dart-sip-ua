@@ -11,9 +11,6 @@ import 'package:dart_sip_ua_example/src/user_state/sip_user_cubit.dart';
 import 'package:flutter/foundation.dart'
     show debugDefaultTargetPlatformOverride, kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_single_instance/flutter_single_instance.dart';
-import 'package:local_notifier/local_notifier.dart';
 import 'package:logger/logger.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -36,63 +33,59 @@ Future<void> _requestPermissions() async {
 }
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized(); // WAJIB
-  if (!kIsWeb) {
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-      await windowManager.ensureInitialized();
+  WidgetsFlutterBinding.ensureInitialized();
+  await windowManager.ensureInitialized();
 
-      await NotificationWinHelper.init();
-
-      WindowOptions windowOptions = const WindowOptions(
-        size: Size(400, 720),
-        center: true,
-        maximumSize: Size(400, 700),
-        backgroundColor: Colors.transparent,
-        skipTaskbar: false,
-        titleBarStyle: TitleBarStyle.normal,
-        windowButtonVisibility: false,
-      );
-      windowManager.waitUntilReadyToShow(windowOptions, () async {
-        await windowManager.show();
-        await windowManager.focus();
-      });
-    }
+  if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+    WindowOptions windowOptions = const WindowOptions(
+      size: Size(400, 800),
+      center: true,
+      maximumSize: Size(400, 800),
+      backgroundColor: Colors.transparent,
+      skipTaskbar: false,
+      titleBarStyle: TitleBarStyle.normal,
+      windowButtonVisibility: false,
+    );
+    windowManager.waitUntilReadyToShow(windowOptions, () async {
+      await windowManager.show();
+      await windowManager.focus();
+    });
   }
+
   Logger.level = Level.warning;
   if (WebRTC.platformIsDesktop) {
     debugDefaultTargetPlatformOverride = TargetPlatform.fuchsia;
   }
 
-  await _requestPermissions(); // 👈 Tambahkan ini
+  await _requestPermissions();
 
-  if (await FlutterSingleInstance().isFirstInstance()) {
-    final logFile = File('log.txt');
-    final sink = logFile.openWrite(mode: FileMode.append);
-    runZonedGuarded(() {
+  await NotificationWinHelper.init();
+
+  final logFile = File('log.txt');
+  final sink = logFile.openWrite(mode: FileMode.append);
+
+  debugPrint = (String? message, {int? wrapWidth}) {
+    if (message != null) {
+      sink.writeln("[${DateTime.now()}] $message");
+    }
+  };
+
+  runZonedGuarded(() {
+    runZoned(() {
       runApp(
         MultiProvider(
           providers: [ChangeNotifierProvider(create: (_) => ThemeProvider())],
           child: MyApp(),
         ),
       );
-    }, (error, stack) {
-      sink.writeln('ERROR: $error\n$stack');
-    });
-
-    debugPrint = (String? message, {int? wrapWidth}) {
-      if (message != null) {
-        sink.writeln(message);
-      }
-    };
-  } else {
-    print("App is already running");
-    final err = await FlutterSingleInstance().focus();
-    if (err != null) {
-      print("Error focusing running instance: $err");
-    }
-
-    exit(0);
-  }
+    }, zoneSpecification: ZoneSpecification(
+      print: (self, parent, zone, line) {
+        sink.writeln("[PRINT] $line");
+      },
+    ));
+  }, (error, stack) {
+    sink.writeln("[${DateTime.now()}] ERROR: $error\n$stack");
+  });
 }
 
 class MyApp extends StatefulWidget {

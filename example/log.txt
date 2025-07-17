@@ -21,3 +21,91 @@ ERROR: PlatformException(Bad Arguments, Unable to init system tray, false, null)
 📱 AppLifecycleState: AppLifecycleState.inactive
 ✅ Notifikasi berhasil diinisialisasi
 callStateChanged: RegistrationStateEnum.REGISTERED
+✅ Notifikasi berhasil diinisialisasi
+callStateChanged: RegistrationStateEnum.REGISTERED
+📱 AppLifecycleState: AppLifecycleState.inactive
+callStateChanged: Direction.incoming
+📞 INCOMING callStateChanged
+callStateChanged: Direction.incoming
+🔔 Notification shown: e658bd1c-3f40-4c18-b8d3-637b312c9f1b
+📱 AppLifecycleState: AppLifecycleState.resumed
+✅ Ringtone started on desktop
+❎ Notification closed: e658bd1c-3f40-4c18-b8d3-637b312c9f1b, reason: LocalNotificationCloseReason.timedOut
+[PRINT] {"port":"5066","extraHeaders":{},"allowBadCertificateWs":true,"allowBadCertificateTcp":true,"uri":"sip:1810@issb.jasnita.co.id","webSocketUrl":"wss://issb.jasnita.co.id:4398/ws","host":"issb.jasnita.co.id","authorizationUser":"1810","password":"password-1810","displayName":"Flutter SIP UA","userAgent":"Dart SIP Client v1.0.0","dtmfMode":"DtmfMode.RFC2833","contactUri":"sip:sip:1810@issb.jasnita.co.id"}
+[2025-07-17 17:13:39.849747] ✅ Notifikasi berhasil diinisialisasi
+[PRINT] [2025-07-17 17:13:39.941] Level.warning websocket_dart_impl.dart:87 ::: Allow self-signed certificate => issb.jasnita.co.id:4398. [0m
+[PRINT] [2025-07-17 17:13:40.7] Level.warning registrator.dart:135 ::: <sip:mawegupk@ketv3qxxwoit.invalid;transport=wss>;+sip.ice;reg-id=1;+sip.instance="<urn:uuid:2418cf12-c1da-4fe4-8747-e792cbcab199>"[0m
+[2025-07-17 17:13:40.100755] callStateChanged: RegistrationStateEnum.REGISTERED
+[2025-07-17 17:13:44.465698] callStateChanged: Direction.outgoing
+[2025-07-17 17:13:44.469226] callStateChanged: Direction.outgoing
+[2025-07-17 17:13:44.569248] callStateChanged: Direction.outgoing
+[2025-07-17 17:13:44.570246] callStateChanged: Direction.outgoing
+[2025-07-17 17:13:44.589877] 🔇 Ringtone stopped on desktop
+[PRINT] trying to add null key
+[2025-07-17 17:13:45.184320] callStateChanged: Direction.outgoing
+[2025-07-17 17:13:45.184320] callStateChanged: Direction.outgoing
+[2025-07-17 17:13:45.187312] callStateChanged: Direction.outgoing
+[2025-07-17 17:13:45.187312] callStateChanged: Direction.outgoing
+[2025-07-17 17:13:45.207418] 🔇 Ringtone stopped on desktop
+[2025-07-17 17:13:45.208344] 🔇 Ringtone stopped on desktop
+[2025-07-17 17:13:45.285239] callStateChanged: Direction.outgoing
+[2025-07-17 17:13:45.285239] callStateChanged: Direction.outgoing
+[2025-07-17 17:13:45.287240] 🔇 Ringtone stopped on desktop
+[2025-07-17 17:14:04.294658] callStateChanged: Direction.outgoing
+[2025-07-17 17:14:04.294658] callStateChanged: Direction.outgoing
+[2025-07-17 17:14:04.351514] 🔇 Ringtone stopped on desktop
+[2025-07-17 17:14:06.579509] 📱 AppLifecycleState: AppLifecycleState.inactive
+[2025-07-17 17:14:06.630830] 🔇 Ringtone stopped on desktop
+[PRINT] {"port":"5066","extraHeaders":{},"allowBadCertificateWs":true,"allowBadCertificateTcp":true,"uri":"sip:1810@issb.jasnita.co.id","webSocketUrl":"wss://issb.jasnita.co.id:4398/ws","host":"issb.jasnita.co.id","authorizationUser":"1810","password":"password-1810","displayName":"Flutter SIP UA","userAgent":"Dart SIP Client v1.0.0","dtmfMode":"DtmfMode.RFC2833","contactUri":"sip:sip:1810@issb.jasnita.co.id"}
+[2025-07-17 17:14:23.223497] ✅ Notifikasi berhasil diinisialisasi
+[PRINT] [2025-07-17 17:14:23.345] Level.warning websocket_dart_impl.dart:87 ::: Allow self-signed certificate => issb.jasnita.co.id:4398. [0m
+[PRINT] [2025-07-17 17:14:23.393] Level.warning registrator.dart:135 ::: <sip:mexbjesw@tkatkep490v7.invalid;transport=wss>;+sip.ice;reg-id=1;+sip.instance="<urn:uuid:b8771334-56ed-444f-9824-ed9889321e51>"[0m
+[2025-07-17 17:14:23.501082] callStateChanged: RegistrationStateEnum.REGISTERED
+[2025-07-17 17:14:25.237346] callStateChanged: Direction.outgoing
+[2025-07-17 17:14:25.240419] callStateChanged: Direction.outgoing
+[2025-07-17 17:14:25.341070] callStateChanged: Direction.outgoing
+[2025-07-17 17:14:25.341070] callStateChanged: Direction.outgoing
+[2025-07-17 17:14:25.355596] 🔇 Ringtone stopped on desktop
+[PRINT] trying to add null key
+[2025-07-17 17:14:26.068297] callStateChanged: Direction.outgoing
+[2025-07-17 17:14:26.068297] callStateChanged: Direction.outgoing
+[2025-07-17 17:14:26.071511] callStateChanged: Direction.outgoing
+[2025-07-17 17:14:26.072022] callStateChanged: Direction.outgoing
+[2025-07-17 17:14:26.073538] 🔇 Ringtone stopped on desktop
+[2025-07-17 17:14:26.073538] 🔇 Ringtone stopped on desktop
+[2025-07-17 17:14:26.168196] callStateChanged: Direction.outgoing
+[2025-07-17 17:14:26.168196] callStateChanged: Direction.outgoing
+[2025-07-17 17:14:26.169235] 🔇 Ringtone stopped on desktop
+[2025-07-17 17:14:28.015629] callStateChanged: Direction.outgoing
+[2025-07-17 17:14:28.015629] callStateChanged: Direction.outgoing
+[2025-07-17 17:14:28.068324] 🔇 Ringtone stopped on desktop
+[2025-07-17 17:14:30.337172] 🔇 Ringtone stopped on desktop
+[2025-07-17 17:14:30.378426] 📱 AppLifecycleState: AppLifecycleState.inactive
+[2025-07-17 17:14:31.664780] 📱 AppLifecycleState: AppLifecycleState.resumed
+[PRINT] {"port":"5066","extraHeaders":{},"allowBadCertificateWs":true,"allowBadCertificateTcp":true,"uri":"sip:1810@issb.jasnita.co.id","webSocketUrl":"wss://issb.jasnita.co.id:4398/ws","host":"issb.jasnita.co.id","authorizationUser":"1810","password":"password-1810","displayName":"Flutter SIP UA","userAgent":"Dart SIP Client v1.0.0","dtmfMode":"DtmfMode.RFC2833","contactUri":"sip:sip:1810@issb.jasnita.co.id"}
+[2025-07-17 17:14:59.415484] ✅ Notifikasi berhasil diinisialisasi
+[PRINT] [2025-07-17 17:14:59.555] Level.warning websocket_dart_impl.dart:87 ::: Allow self-signed certificate => issb.jasnita.co.id:4398. [0m
+[PRINT] [2025-07-17 17:14:59.636] Level.warning registrator.dart:135 ::: <sip:wdbxnyvq@z5t5kvv6gdpo.invalid;transport=wss>;+sip.ice;reg-id=1;+sip.instance="<urn:uuid:e2387577-27da-4bfd-aeda-23163b97606b>"[0m
+[2025-07-17 17:14:59.768082] callStateChanged: RegistrationStateEnum.REGISTERED
+[2025-07-17 17:15:02.485621] callStateChanged: Direction.outgoing
+[2025-07-17 17:15:02.489146] callStateChanged: Direction.outgoing
+[2025-07-17 17:15:02.589348] callStateChanged: Direction.outgoing
+[2025-07-17 17:15:02.589348] callStateChanged: Direction.outgoing
+[2025-07-17 17:15:02.607537] 🔇 Ringtone stopped on desktop
+[PRINT] trying to add null key
+[2025-07-17 17:15:03.178737] callStateChanged: Direction.outgoing
+[2025-07-17 17:15:03.178737] callStateChanged: Direction.outgoing
+[2025-07-17 17:15:03.181744] callStateChanged: Direction.outgoing
+[2025-07-17 17:15:03.181744] callStateChanged: Direction.outgoing
+[2025-07-17 17:15:03.183737] 🔇 Ringtone stopped on desktop
+[2025-07-17 17:15:03.183737] 🔇 Ringtone stopped on desktop
+[2025-07-17 17:15:03.278771] callStateChanged: Direction.outgoing
+[2025-07-17 17:15:03.278771] callStateChanged: Direction.outgoing
+[2025-07-17 17:15:03.280287] 🔇 Ringtone stopped on desktop
+[2025-07-17 17:15:04.974149] callStateChanged: Direction.outgoing
+[2025-07-17 17:15:04.975146] callStateChanged: Direction.outgoing
+[2025-07-17 17:15:05.032005] 🔇 Ringtone stopped on desktop
+[2025-07-17 17:15:07.299308] 🔇 Ringtone stopped on desktop
+[2025-07-17 17:15:07.743657] 📱 AppLifecycleState: AppLifecycleState.inactive
+[PRINT] [2025-07-17 17:24:53.777] Level.warning registrator.dart:135 ::: <sip:wdbxnyvq@z5t5kvv6gdpo.invalid;transport=wss>;+sip.ice;reg-id=1;+sip.instance="<urn:uuid:e2387577-27da-4bfd-aeda-23163b97606b>"[0m
+[2025-07-17 17:29:28.463508] 📱 AppLifecycleState: AppLifecycleState.resumed
