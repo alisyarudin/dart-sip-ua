@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:dart_sip_ua_example/src/loket_cti/branch_selection_page.dart';
 import 'package:dart_sip_ua_example/src/loket_cti/call_page.dart';
@@ -18,7 +19,10 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:sip_ua/sip_ua.dart';
+import 'package:system_tray/system_tray.dart';
 import 'package:window_manager/window_manager.dart';
+
+import 'package:english_words/english_words.dart';
 
 import 'src/about.dart';
 import 'src/callscreen.dart';
@@ -36,21 +40,6 @@ Future<void> _requestPermissions() async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // WAJIB
-
-  final logFile = File('log.txt');
-  final sink = logFile.openWrite(mode: FileMode.append);
-  runZonedGuarded(() {
-    runApp(MyApp());
-  }, (error, stack) {
-    sink.writeln('ERROR: $error\n$stack');
-  });
-
-  debugPrint = (String? message, {int? wrapWidth}) {
-    if (message != null) {
-      sink.writeln(message);
-    }
-  };
-
   if (!kIsWeb) {
     if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
       await windowManager.ensureInitialized();
@@ -80,17 +69,27 @@ void main() async {
   await _requestPermissions(); // 👈 Tambahkan ini
 
   if (await FlutterSingleInstance().isFirstInstance()) {
-    runApp(
-      MultiProvider(
-        providers: [ChangeNotifierProvider(create: (_) => ThemeProvider())],
-        child: MyApp(),
-      ),
-    );
+    final logFile = File('log.txt');
+    final sink = logFile.openWrite(mode: FileMode.append);
+    runZonedGuarded(() {
+      runApp(
+        MultiProvider(
+          providers: [ChangeNotifierProvider(create: (_) => ThemeProvider())],
+          child: MyApp(),
+        ),
+      );
+    }, (error, stack) {
+      sink.writeln('ERROR: $error\n$stack');
+    });
+
+    debugPrint = (String? message, {int? wrapWidth}) {
+      if (message != null) {
+        sink.writeln(message);
+      }
+    };
   } else {
     print("App is already running");
-
     final err = await FlutterSingleInstance().focus();
-
     if (err != null) {
       print("Error focusing running instance: $err");
     }
@@ -99,11 +98,28 @@ void main() async {
   }
 }
 
+class MyApp extends StatefulWidget {
+  const MyApp({Key? key}) : super(key: key);
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
 typedef PageContentBuilder = Widget Function(
     [SIPUAHelper? helper, Object? arguments]);
 
 // ignore: must_be_immutable
-class MyApp extends StatelessWidget {
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
   final SIPUAHelper _helper = SIPUAHelper();
   Map<String, PageContentBuilder> routes = {
     '/': ([SIPUAHelper? helper, Object? arguments]) =>

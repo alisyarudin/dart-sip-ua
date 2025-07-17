@@ -1,0 +1,23 @@
+✅ Notifikasi berhasil diinisialisasi
+✅ Notifikasi berhasil diinisialisasi
+ERROR: PlatformException(Bad Arguments, Unable to init system tray, false, null)
+#0      StandardMethodCodec.decodeEnvelope (package:flutter/src/services/message_codecs.dart:652:7)
+#1      MethodChannel._invokeMethod (package:flutter/src/services/platform_channel.dart:400:18)
+<asynchronous suspension>
+#2      SystemTray.initSystemTray (package:system_tray/src/tray.dart:65:18)
+<asynchronous suspension>
+#3      _MyAppState.initSystemTray (package:dart_sip_ua_example/main.dart:209:5)
+<asynchronous suspension>
+
+ERROR: PlatformException(Bad Arguments, Unable to init system tray, false, null)
+#0      StandardMethodCodec.decodeEnvelope (package:flutter/src/services/message_codecs.dart:652:7)
+#1      MethodChannel._invokeMethod (package:flutter/src/services/platform_channel.dart:400:18)
+<asynchronous suspension>
+#2      SystemTray.initSystemTray (package:system_tray/src/tray.dart:65:18)
+<asynchronous suspension>
+#3      _MyAppState.initSystemTray (package:dart_sip_ua_example/main.dart:209:5)
+<asynchronous suspension>
+
+📱 AppLifecycleState: AppLifecycleState.inactive
+✅ Notifikasi berhasil diinisialisasi
+callStateChanged: RegistrationStateEnum.REGISTERED
