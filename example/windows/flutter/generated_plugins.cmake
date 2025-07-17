@@ -8,7 +8,6 @@ list(APPEND FLUTTER_PLUGIN_LIST
   local_notifier
   permission_handler_windows
   screen_retriever_windows
-  system_tray
   window_manager
 )
 

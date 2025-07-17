@@ -19,10 +19,7 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:sip_ua/sip_ua.dart';
-import 'package:system_tray/system_tray.dart';
 import 'package:window_manager/window_manager.dart';
-
-import 'package:english_words/english_words.dart';
 
 import 'src/about.dart';
 import 'src/callscreen.dart';

@@ -7,7 +7,6 @@ list(APPEND FLUTTER_PLUGIN_LIST
   flutter_webrtc
   local_notifier
   screen_retriever_linux
-  system_tray
   window_manager
 )
 
