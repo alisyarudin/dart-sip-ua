@@ -524,7 +524,7 @@ class _CallPageState extends State<CallPage>
         } else {
           NotificationWinHelper.showBasic(
             'Panggilan Masuk',
-            'Dari Cabang Jakarta',
+            call.remote_display_name ?? 'Panggilan Masuk',
           );
 
           Navigator.pushNamed(context, '/callscreen', arguments: call);

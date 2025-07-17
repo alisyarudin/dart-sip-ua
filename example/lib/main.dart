@@ -11,6 +11,7 @@ import 'package:flutter/foundation.dart'
     show debugDefaultTargetPlatformOverride, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_single_instance/flutter_single_instance.dart';
 import 'package:local_notifier/local_notifier.dart';
 import 'package:logger/logger.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
@@ -78,12 +79,24 @@ void main() async {
 
   await _requestPermissions(); // 👈 Tambahkan ini
 
-  runApp(
-    MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => ThemeProvider())],
-      child: MyApp(),
-    ),
-  );
+  if (await FlutterSingleInstance().isFirstInstance()) {
+    runApp(
+      MultiProvider(
+        providers: [ChangeNotifierProvider(create: (_) => ThemeProvider())],
+        child: MyApp(),
+      ),
+    );
+  } else {
+    print("App is already running");
+
+    final err = await FlutterSingleInstance().focus();
+
+    if (err != null) {
+      print("Error focusing running instance: $err");
+    }
+
+    exit(0);
+  }
 }
 
 typedef PageContentBuilder = Widget Function(
