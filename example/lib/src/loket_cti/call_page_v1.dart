@@ -28,21 +28,21 @@ import 'package:dart_sip_ua_example/main.dart';
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:dart_sip_ua_example/src/notification_helper.dart';
 
-class CallPage extends StatefulWidget {
+class CallPageV1 extends StatefulWidget {
   final Branch selectedBranch;
   final SIPUAHelper? _helper;
 
-  const CallPage(
+  const CallPageV1(
     this._helper, {
     Key? key,
     required this.selectedBranch,
   }) : super(key: key);
 
   @override
-  State<CallPage> createState() => _CallPageState();
+  State<CallPageV1> createState() => _CallPageState();
 }
 
-class _CallPageState extends State<CallPage>
+class _CallPageState extends State<CallPageV1>
     with WidgetsBindingObserver
     implements SipUaHelperListener {
   AppLifecycleState _appLifecycleState = AppLifecycleState.resumed;
@@ -54,62 +54,6 @@ class _CallPageState extends State<CallPage>
   SIPUAHelper? get helper => widget._helper;
   late SipUserCubit currentUser;
   Call? _activeCall;
-
-  List<MediaDeviceInfo> _audioInputs = [];
-  List<MediaDeviceInfo> _audioOutputs = [];
-  String? _selectedInputId;
-  String? _selectedOutputId;
-
-  final String _micDeviceKey = 'selected_mic_device_id';
-  final String _speakerDeviceKey = 'selected_speaker_device_id';
-
-  Future<void> listAndSelectAudioDevices() async {
-    final devices = await navigator.mediaDevices.enumerateDevices();
-
-    final inputs = devices.where((d) => d.kind == 'audioinput').toList();
-    final outputs = devices.where((d) => d.kind == 'audiooutput').toList();
-
-    setState(() {
-      _audioInputs = inputs;
-      _audioOutputs = outputs;
-      _selectedInputId = inputs.isNotEmpty ? inputs.first.deviceId : null;
-      _selectedOutputId = outputs.isNotEmpty ? outputs.first.deviceId : null;
-    });
-
-    // apply saved selection if available
-    if (_selectedInputId != null &&
-        !inputs.any((d) => d.deviceId == _selectedInputId)) {
-      _selectedInputId = inputs.isNotEmpty ? inputs.first.deviceId : null;
-    }
-    if (_selectedOutputId != null &&
-        !outputs.any((d) => d.deviceId == _selectedOutputId)) {
-      _selectedOutputId = outputs.isNotEmpty ? outputs.first.deviceId : null;
-    }
-
-    debugPrint('🎙️ Inputs: ${inputs.map((d) => d.label).toList()}');
-    debugPrint('🔈 Outputs: ${outputs.map((d) => d.label).toList()}');
-  }
-
-  Future<void> _saveSelectedAudioDevices() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (_selectedInputId != null) {
-      prefs.setString(_micDeviceKey, _selectedInputId!);
-    }
-    if (_selectedOutputId != null) {
-      prefs.setString(_speakerDeviceKey, _selectedOutputId!);
-    }
-  }
-
-  Future<void> _loadSelectedAudioDevices() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedMicId = prefs.getString(_micDeviceKey);
-    final savedSpeakerId = prefs.getString(_speakerDeviceKey);
-
-    setState(() {
-      _selectedInputId = savedMicId;
-      _selectedOutputId = savedSpeakerId;
-    });
-  }
 
   @override
   Future<void> launchAppFromCallKit() async {
@@ -167,12 +111,6 @@ class _CallPageState extends State<CallPage>
           default:
             break;
         }
-      });
-    }
-
-    if (!kIsWeb && Platform.isWindows) {
-      _loadSelectedAudioDevices().then((_) {
-        listAndSelectAudioDevices();
       });
     }
   }
@@ -456,7 +394,7 @@ class _CallPageState extends State<CallPage>
                     ),
                   ),
                   Positioned(
-                    top: 80,
+                    top: 160,
                     left: 24,
                     right: 24,
                     child: Container(
@@ -476,52 +414,6 @@ class _CallPageState extends State<CallPage>
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (!kIsWeb && Platform.isWindows)
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const SizedBox(height: 16),
-                                  const Text('Pilih Mikrofon:',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold)),
-                                  DropdownButton<String>(
-                                    value: _selectedInputId,
-                                    isExpanded: true,
-                                    items: _audioInputs.map((device) {
-                                      return DropdownMenuItem<String>(
-                                        value: device.deviceId,
-                                        child: Text(device.label),
-                                      );
-                                    }).toList(),
-                                    onChanged: (value) {
-                                      setState(() => _selectedInputId = value);
-                                      _saveSelectedAudioDevices(); // 👈 simpan
-                                    },
-                                  ),
-                                  const SizedBox(height: 16),
-                                  const Text('Pilih Speaker:',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold)),
-                                  DropdownButton<String>(
-                                    value: _selectedOutputId,
-                                    isExpanded: true,
-                                    items: _audioOutputs.map((device) {
-                                      return DropdownMenuItem<String>(
-                                        value: device.deviceId,
-                                        child: Text(device.label),
-                                      );
-                                    }).toList(),
-                                    onChanged: (value) {
-                                      setState(() => _selectedOutputId = value);
-                                      _saveSelectedAudioDevices(); // 👈 simpan
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
                           // ElevatedButton(
                           //   onPressed: () {
                           //     FlutterRingtonePlayer().play(

@@ -1,6 +1,8 @@
 #include "flutter_window.h"
 #include <optional>
 #include <shellapi.h>
+#include "resource.h"
+
 #include "flutter/generated_plugin_registrant.h"
 
 #define WM_TRAYICON (WM_USER + 1)
@@ -21,8 +23,9 @@ void AddTrayIcon(HWND hwnd)
   nid.uID = 1;
   nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
   nid.uCallbackMessage = WM_TRAYICON;
-  nid.hIcon = LoadIcon(nullptr, IDI_INFORMATION); // Ganti dengan ikon kustom jika perlu
-  wcscpy_s(nid.szTip, L"Aplikasi Flutter Kamu");
+  // nid.hIcon = LoadIcon(nullptr, IDI_INFORMATION); // Ganti dengan ikon kustom jika perlu
+  nid.hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_APP_ICON));
+  wcscpy_s(nid.szTip, L"Voip Jasnita");
 
   Shell_NotifyIcon(NIM_ADD, &nid);
 }
