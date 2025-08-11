@@ -26,7 +26,7 @@ import '../callscreen.dart';
 import 'package:dart_sip_ua_example/main.dart';
 
 import 'package:android_intent_plus/android_intent.dart';
-import 'package:dart_sip_ua_example/src/notification_helper.dart';
+// (duplicate import removed) import 'package:dart_sip_ua_example/src/notification_helper.dart';
 
 class CallPage extends StatefulWidget {
   final Branch selectedBranch;
@@ -234,27 +234,7 @@ class _CallPageState extends State<CallPage>
   }
 
   Future<void> _checkActiveCallOnResume() async {
-    // if (_activeCall != null &&
-    //     !_navigatedToCallScreen &&
-    //     (_activeCall!.direction == Direction.incoming ||
-    //         _activeCall!.direction == Direction.outgoing)) {
-    //   debugPrint('↩️ App resumed — navigate to call screen');
-    //   _navigatedToCallScreen = true;
-    //   navigatorKey.currentState
-    //       ?.pushNamed('/callscreen', arguments: _activeCall);
-    //   return;
-    // }
-
-    // final callkitCalls = await FlutterCallkitIncoming.activeCalls();
-    // if (callkitCalls.isNotEmpty && !_navigatedToCallScreen) {
-    //   debugPrint('📲 Found CallKit call on resume');
-
-    //   if (_activeCall != null) {
-    //     _navigatedToCallScreen = true;
-    //     navigatorKey.currentState
-    //         ?.pushNamed('/callscreen', arguments: _activeCall);
-    //   }
-    // }
+    // intentionally disabled; use if you want auto-navigate on resume
   }
 
   @override
@@ -385,30 +365,20 @@ class _CallPageState extends State<CallPage>
   @override
   Widget build(BuildContext context) {
     final branch = widget.selectedBranch;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
       appBar: AppBar(
         title: Text('Call to ${branch.displayName}'),
         actions: [
-          // ElevatedButton(
-          //   onPressed: () async {
-          //     await Future.delayed(Duration(seconds: 1)); // tunggu 1 detik
-          //     NotificationWinHelper.showBasic(
-          //       'Panggilan Masuk',
-          //       'Dari Cabang Jakarta',
-          //     );
-          //   },
-          //   child: Text('Test Notifikasi'),
-          // ),
           IconButton(
-            icon: Icon(
-                Icons.account_tree), // atau Icons.business, sesuai preferensi
+            icon: const Icon(Icons.account_tree),
             tooltip: 'Back to Branch',
             onPressed: () async {
               await BranchStorageHelper.clearBranch(); // Hapus data branch
               Navigator.pushNamedAndRemoveUntil(
                 context,
-                '/', // Ganti sesuai route halaman pemilihan branch-mu
+                '/', // route halaman pemilihan branch
                 (route) => false,
               );
             },
@@ -416,13 +386,160 @@ class _CallPageState extends State<CallPage>
         ],
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: Stack(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final media = MediaQuery.of(context);
+            final shortest = media.size.shortestSide;
+            final isTablet = shortest >= 600;
+
+            final headerHeight = isTablet ? 260.0 : 220.0;
+            final overlap = headerHeight * 0.4; // overlap ke atas
+            final horizontalPad = isTablet ? 32.0 : 16.0;
+            final maxCardWidth = isTablet ? 720.0 : 600.0;
+
+            // Shared card content
+            Widget card = Container(
+              width: double.infinity, // 🔑 ensures full width in mobile
+              padding: const EdgeInsets.symmetric(
+                vertical: 32,
+                horizontal: 24,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 10,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (!kIsWeb && Platform.isWindows)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Pilih Mikrofon:',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          DropdownButton<String>(
+                            value: _selectedInputId,
+                            isExpanded: true,
+                            items: _audioInputs.map((device) {
+                              return DropdownMenuItem<String>(
+                                value: device.deviceId,
+                                child: Text(device.label),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() => _selectedInputId = value);
+                              _saveSelectedAudioDevices();
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Pilih Speaker:',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          DropdownButton<String>(
+                            value: _selectedOutputId,
+                            isExpanded: true,
+                            items: _audioOutputs.map((device) {
+                              return DropdownMenuItem<String>(
+                                value: device.deviceId,
+                                child: Text(device.label),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() => _selectedOutputId = value);
+                              _saveSelectedAudioDevices();
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  Image.asset('assets/logo_175.png',
+                      height: isTablet ? 100 : 80),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Selamat Datang',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Anda terhubung pada cabang',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    widget.selectedBranch.name.toUpperCase(),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+                  // Call button
+                  GestureDetector(
+                    onTap: _makeCall,
+                    child: Container(
+                      width: isTablet ? 100 : 90,
+                      height: isTablet ? 100 : 90,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            Colors.greenAccent.withOpacity(0.5),
+                            Colors.green.withOpacity(0.8),
+                          ],
+                          center: Alignment.center,
+                          radius: 0.8,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.greenAccent.withOpacity(0.6),
+                            blurRadius: 30,
+                            spreadRadius: 8,
+                          ),
+                        ],
+                      ),
+                      child: const Center(
+                        child: Icon(Icons.phone, size: 36, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            );
+
+            // On tablet: center + constrain. On mobile: render directly for true full width.
+            final cardWrapped = isTablet
+                ? Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: maxCardWidth),
+                      child: card,
+                    ),
+                  )
+                : card;
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: Column(
+                children: [
+                  // BLUE HEADER
                   Container(
-                    height: 220,
+                    height: headerHeight,
                     width: double.infinity,
                     decoration: const BoxDecoration(
                       color: Color(0xFF2196F3),
@@ -435,166 +552,47 @@ class _CallPageState extends State<CallPage>
                         horizontal: 16, vertical: 20),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("${widget.selectedBranch.extension}",
-                                style: TextStyle(
-                                    color: Colors.white, fontSize: 14)),
+                            Text(
+                              "${widget.selectedBranch.extension}",
+                              style: const TextStyle(
+                                  color: Colors.white, fontSize: 14),
+                            ),
                           ],
                         ),
                         Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                                "${_registerState.state?.name ?? 'Loading...'}",
-                                style: const TextStyle(
-                                    color: Colors.white, fontSize: 14)),
+                              "${_registerState.state?.name ?? 'Loading...'}",
+                              style: const TextStyle(
+                                  color: Colors.white, fontSize: 14),
+                            ),
                           ],
                         ),
                       ],
                     ),
                   ),
-                  Positioned(
-                    top: 80,
-                    left: 24,
-                    right: 24,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 32, horizontal: 24),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black12,
-                            blurRadius: 10,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (!kIsWeb && Platform.isWindows)
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const SizedBox(height: 16),
-                                  const Text('Pilih Mikrofon:',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold)),
-                                  DropdownButton<String>(
-                                    value: _selectedInputId,
-                                    isExpanded: true,
-                                    items: _audioInputs.map((device) {
-                                      return DropdownMenuItem<String>(
-                                        value: device.deviceId,
-                                        child: Text(device.label),
-                                      );
-                                    }).toList(),
-                                    onChanged: (value) {
-                                      setState(() => _selectedInputId = value);
-                                      _saveSelectedAudioDevices(); // 👈 simpan
-                                    },
-                                  ),
-                                  const SizedBox(height: 16),
-                                  const Text('Pilih Speaker:',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold)),
-                                  DropdownButton<String>(
-                                    value: _selectedOutputId,
-                                    isExpanded: true,
-                                    items: _audioOutputs.map((device) {
-                                      return DropdownMenuItem<String>(
-                                        value: device.deviceId,
-                                        child: Text(device.label),
-                                      );
-                                    }).toList(),
-                                    onChanged: (value) {
-                                      setState(() => _selectedOutputId = value);
-                                      _saveSelectedAudioDevices(); // 👈 simpan
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
-                          // ElevatedButton(
-                          //   onPressed: () {
-                          //     FlutterRingtonePlayer().play(
-                          //       android: AndroidSounds.notification,
-                          //       ios: IosSounds.glass,
-                          //       looping: true,
-                          //       volume: 1.0,
-                          //     );
-                          //   },
-                          //   child: Text('Test Play'),
-                          // ),
-                          // ElevatedButton(
-                          //   onPressed: () {
-                          //     FlutterRingtonePlayer().stop();
-                          //   },
-                          //   child: Text('Test Stop'),
-                          // ),
-                          Image.asset('assets/logo_175.png', height: 80),
-                          const SizedBox(height: 16),
-                          const Text('Selamat Datang',
-                              style: TextStyle(
-                                  fontSize: 18, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 8),
-                          Text('Anda terhubung pada cabang',
-                              style:
-                                  TextStyle(fontSize: 14, color: Colors.grey)),
-                          const SizedBox(height: 4),
-                          Text(branch.name.toUpperCase(),
-                              style: const TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 24),
-                          GestureDetector(
-                            onTap: _makeCall,
-                            child: Container(
-                              width: 90,
-                              height: 90,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: RadialGradient(
-                                  colors: [
-                                    Colors.greenAccent.withOpacity(0.5),
-                                    Colors.green.withOpacity(0.8),
-                                  ],
-                                  center: Alignment.center,
-                                  radius: 0.8,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.greenAccent.withOpacity(0.6),
-                                    blurRadius: 30,
-                                    spreadRadius: 8,
-                                  ),
-                                ],
-                              ),
-                              child: const Center(
-                                child: Icon(Icons.phone,
-                                    size: 36, color: Colors.white),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          // Text(
-                          //     "Status: ${_registerState.state?.name ?? 'Loading...'}",
-                          //     style: const TextStyle(
-                          //         fontSize: 12, color: Colors.black54)),
-                        ],
-                      ),
+
+                  // Overlapping card
+                  Transform.translate(
+                    offset: Offset(0, -overlap),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: horizontalPad),
+                      child: cardWrapped,
                     ),
                   ),
+
+                  // Space after the pulled-up card
+                  SizedBox(height: 24 - overlap.clamp(0, 24)),
                 ],
               ),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -613,14 +611,13 @@ class _CallPageState extends State<CallPage>
   Future<void> callStateChanged(Call call, CallState callState) async {
     _activeCall = call; // simpan referensi call
     debugPrint("callStateChanged: ${call.direction}");
-    // ✅ 1. Tangani panggilan MASUK (hanya showIncomingCall saja, tanpa navigate)
+    // ✅ 1. Tangani panggilan MASUK
     if (callState.state == CallStateEnum.CALL_INITIATION &&
         !_navigatedToCallScreen &&
         call.direction == Direction.incoming) {
       debugPrint('📞 INCOMING callStateChanged');
 
       if (_appLifecycleState == AppLifecycleState.resumed) {
-        // App sedang foreground, langsung navigate
         _navigatedToCallScreen = true;
         Navigator.pushNamed(context, '/callscreen', arguments: call);
       } else {
@@ -640,7 +637,7 @@ class _CallPageState extends State<CallPage>
       }
     }
 
-    // ✅ 2. Tangani panggilan KELUAR (langsung masuk call screen)
+    // ✅ 2. Tangani panggilan KELUAR
     if (callState.state == CallStateEnum.CALL_INITIATION &&
         !_navigatedToCallScreen &&
         call.direction == Direction.outgoing) {
@@ -648,7 +645,7 @@ class _CallPageState extends State<CallPage>
       Navigator.pushNamed(context, '/callscreen', arguments: call);
     }
 
-    // // ✅ 3. Jika call langsung masuk STREAM (fallback untuk web/non-CallKit)
+    // ✅ 3. STREAM fallback
     if (callState.state == CallStateEnum.STREAM &&
         !_navigatedToCallScreen &&
         _appLifecycleState == AppLifecycleState.resumed) {
@@ -663,7 +660,6 @@ class _CallPageState extends State<CallPage>
       _activeCall = null;
 
       if (NotificationHelper.isMobilePlatform()) {
-        // ✅ Tutup CallKit UI jika masih terbuka
         FlutterCallkitIncoming.endAllCalls();
       }
     }
