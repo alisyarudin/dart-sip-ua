@@ -70,14 +70,15 @@ class _MyRegisterWidget extends State<RegisterWidget>
     setState(() {
       _portController.text = '5060';
       _wsUriController.text = _preferences.getString('ws_uri') ??
-          'wss://bpjs-issb.jasnita.co.id:4398/ws';
+          'wss://mandiriwebrtc5.jasnita.co.id/ws';
       _sipUriController.text = _preferences.getString('sip_uri') ??
-          'VP00000@bpjs-issb.jasnita.co.id';
+          '140002@mandiriwebrtc5.jasnita.co.id';
       _displayNameController.text =
-          _preferences.getString('display_name') ?? 'Flutter SIP UA';
-      _passwordController.text = _preferences.getString('password') ?? '';
+          _preferences.getString('display_name') ?? '140002';
+      _passwordController.text =
+          _preferences.getString('password') ?? 'password-140002';
       _authorizationUserController.text =
-          _preferences.getString('auth_user') ?? 'VP00000';
+          _preferences.getString('auth_user') ?? '140002';
     });
   }
 

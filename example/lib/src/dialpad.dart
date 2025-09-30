@@ -250,7 +250,7 @@ class _MyDialPadWidget extends State<DialPadWidget>
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("Dart SIP UA Demo"),
+        title: Text("JASNITA DEMO WEBRTC"),
         actions: <Widget>[
           PopupMenuButton<String>(
               onSelected: (String value) {
