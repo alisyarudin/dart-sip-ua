@@ -134,7 +134,7 @@ final List<Map<String, dynamic>> _mockJson = [
     "add_to_pbx": "1",
     "destination_call": "02150882930",
     "tech": "pjsip",
-    "display_name": "Bali Denpasar",
+    "display_name": "Bali",
     "extension": "1809",
     "password": "password-1809",
     "created_at": null,

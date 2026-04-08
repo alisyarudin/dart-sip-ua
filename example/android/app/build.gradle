@@ -41,7 +41,7 @@ android {
         applicationId = "com.github.cloudwebrtc.dart_sip_ua_example"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
-        minSdk = 23                // ✅ minimal SDK yang disupport
+        minSdkVersion = flutter.minSdkVersion                // ✅ minimal SDK yang disupport
         targetSdk = 35             // ✅ target SDK
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName
